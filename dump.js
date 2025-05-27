@@ -28,7 +28,6 @@ import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import Webcam from 'react-webcam';
 import userData from "../user.json";
-import { useOTP } from './hooks/useOTP'; 
 
 const Welcome = ({ onContinue }) => {
   return (
@@ -70,146 +69,6 @@ const Welcome = ({ onContinue }) => {
       </button>
     </div>
   );
-}
-
-const PersonalInfoStep = ({ 
-  phoneNumber,
-  setPhoneNumber,
-  date,
-  setDate,
-  otpMethod,
-  setOtpMethod,
-  onContinue
-}) => {
-  return (
-    <div className="h-full flex flex-col">
-      <div className="text-center mb-4">
-        <h3>Personal Information</h3>
-      </div>
-      <div className="flex-1 flex flex-col py-[20px]">
-        <div className="mb-3">
-          <label htmlFor="phone" className="block text-[18px] font-medium">
-            Phone Number
-          </label>
-          <input
-            type="tel"
-            className="w-full px-[20px] py-[14px] border bg-transparent border-[#E5E5E5] focus:outline-none"
-            id="phone"
-            placeholder="Enter phone number"
-            value={phoneNumber}
-            onChange={(e) => setPhoneNumber(e.target.value)}
-          />
-        </div>
-
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant={"outline"}
-              className={cn(
-                "w-[240px] justify-start text-left font-normal",
-                !date && "text-muted-foreground"
-              )}
-              type="button"
-            >
-              <CalendarIcon />
-              {date ? format(date, "PPP") : <span>Pick a date</span>}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0 z-[9999]" align="start">
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={setDate}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
-
-        <div className="mb-4">
-          <label className="block text-[18px] font-medium mb-2">Preferred OTP Method</label>
-          <div className="flex items-center gap-4">
-            <label className="flex items-center">
-              <input
-                type="radio"
-                name="otpMethod"
-                value="sms"
-                checked={otpMethod === 'sms'}
-                onChange={(e) => setOtpMethod(e.target.value)}
-                className="mr-2"
-              />
-              SMS
-            </label>
-            <label className="flex items-center">
-              <input
-                type="radio"
-                name="otpMethod"
-                value="whatsapp"
-                checked={otpMethod === 'whatsapp'}
-                onChange={(e) => setOtpMethod(e.target.value)}
-                className="mr-2"
-              />
-              Whatsapp
-            </label>
-          </div>
-        </div>
-
-        <button onClick={onContinue} className="primary-button mt-auto">Continue</button>
-      </div>
-    </div>
-  );
-}
-
-const OTPInputComponent = ({ 
-  otp, 
-  inputRefs,
-  focusedInput,
-  onContinue,
-  setFocusedInput,
-  handleOTPInputChange,
-  handleKeyDown,
-  otpMethod
-}) => {
-  return (
-    <div className="h-full flex flex-col items-center justify-center">
-      <h3 className="mb-4">Enter OTP</h3>
-      <p className="text-center mb-6">A verification code has been sent to your {otpMethod === 'sms' ? 'phone number' : 'email address'}.</p>
-      <div className="flex justify-between">
-        {otp.map((digit, index) => (
-          <input
-            key={index}
-            type="text"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            maxLength={1}
-            value={digit}
-            onChange={(e) => {
-              // Only allow numeric input
-              const value = e.target.value.replace(/[^0-9]/g, '');
-              handleOTPInputChange(index, value, e);
-            }}
-            onKeyDown={(e) => handleKeyDown(index, e)}
-            onFocus={() => setFocusedInput(index)}
-            onBlur={() => setFocusedInput(null)}
-            ref={el => inputRefs.current[index].current = el}
-            //ref={el => (inputRefs.current[index] = el)}
-            //ref={inputRefs[index]}
-            className={`border-2 ${
-                focusedInput == index
-                    ? 'border-primary' 
-                    : 'border-[#89ABD940]'
-            } rounded-[5px] w-[15%] h-[60px] text-center text-[20px] font-primary text-primary`}
-          />
-        ))}
-      </div>
-
-      <button onClick={onContinue} className="primary-button mt-8 w-full">Verify OTP</button>
-      <button 
-        className="mt-4 text-blue-600 text-sm" 
-        onClick={() => console.log('Resend OTP')}>
-        Resend OTP
-      </button>
-    </div>
-  )
 }
 
 const VerificationDocument = ({ 
@@ -312,22 +171,6 @@ const VerificationDocument = ({
 }
 
 function App() {
-  const [currentStep, setCurrentStep] = useState(0);
-  const totalSteps = 5;
-  const nextStep = () => {
-    if (currentStep < totalSteps) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
-  const prevStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-  const goToStep = (step) => {
-    setCurrentStep(step);
-  };
-
   // const queryClient = new QueryClient();
   const [user, setUser] = useState(userData);
   const [uploadedFiles, setUploadedFiles] = useState({});
@@ -335,15 +178,7 @@ function App() {
 
   const [phoneNumber, setPhoneNumber] = useState('+2348114800769');
   const [otpMethod, setOtpMethod] = useState(''); // e.g., 'sms', 'email', 'whatsapp'
-  const {
-    otp,
-    inputRefs,
-    handleOTPInputChange,
-    handleKeyDown,
-    isComplete,
-    focusedInput,
-    setFocusedInput
-  } = useOTP({ length: 6, currentStep });
+  const [otp, setOtp] = useState(''); // For OTP input if needed
 
   const [addressLine1, setAddressLine1] = useState('');
   const [city, setCity] = useState('');
@@ -414,7 +249,21 @@ function App() {
 
   const [isLoading, setIsLoading] = useState(false);
   
-  
+  const [currentStep, setCurrentStep] = useState(0);
+  const totalSteps = 5;
+  const nextStep = () => {
+    if (currentStep < totalSteps) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+  const prevStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+  const goToStep = (step) => {
+    setCurrentStep(step);
+  };
 
   // Handle file upload
   const handleFileUpload = (docId, file) => {
@@ -462,70 +311,163 @@ function App() {
   const renderStepContent = () => {
     switch(currentStep) {
       case 0:
-        return <Welcome onContinue={nextStep} />;
+        return (
+          <>
+            {/* <div className="flex flex-col">
+              <div className="text-center">
+                <div className="flex justify-center mb-[10px]">
+                  <img src={eye} alt="" className="feature-icon" />
+                </div>
+                <h3>To continue, we need to verify your identity</h3>
+              </div>
+
+              <div className="my-4 rounded-2 border" style={{ padding: "20px 25px" }}>
+                  <div className="flex items-center mb-3">
+                      <img src={eye} alt="" className="feature-icon" />
+                      <div className="feature-text">
+                          <b>How Confam verifies your identity.</b> Confam checks the data you provide againts approved databases.
+                      </div>
+                  </div>
+
+                  <div className="flex items-center mb-3">
+                      <img src={shield} alt="" className="feature-icon" />
+                      <div className="feature-text">
+                          <b>Fast and secure.</b>
+                          Your data is encrypted and will never be made accessible to unauthorized third parties.
+                      </div>
+                  </div>
+
+                  <div className="flex items-center">
+                      <div className="feature-text">
+                          Allow is authorized and regulated by the<b> National Data Privacy Board (NDPB).</b>
+                      </div>
+                  </div>
+              </div>
+
+              <div className="footer-text m-[10px]">
+                By clicking 'Continue' you agree to <a href="#">Allow's End-user Policy</a>.<br />
+              </div>
+              <button 
+              onClick={nextStep}
+              className="primary-button">
+                Continue
+              </button>
+            </div> */}
+            <Welcome onContinue={nextStep} />
+          </>
+        )
       case 1: 
       return (
-        <PersonalInfoStep
-          phoneNumber={phoneNumber}
-          setPhoneNumber={setPhoneNumber}
-          date={date}
-          setDate={setDate}
-          otpMethod={otpMethod}
-          setOtpMethod={setOtpMethod}
-          onContinue={nextStep}
-        />
+        <>
+          <div className="h-full flex flex-col">
+            <div className="text-center mb-4">
+              <h3>Personal Information</h3>
+            </div>
+            <div className="flex-1 flex flex-col py-[20px]">
+              <div className="mb-3">
+                <label
+                  htmlFor="phone"
+                  className="block text-[18px] font-medium"
+                >
+                  Phone Number
+                </label>
+                <input 
+                  type="tel" 
+                  className="w-full px-[20px] py-[14px] border bg-transparent border-[#E5E5E5] focus:outline-none" 
+                  id="phone" 
+                  placeholder="Enter phone number" 
+                  value={phoneNumber} // Controlled component
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                />
+              </div>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "w-[240px] justify-start text-left font-normal",
+                      !date && "text-muted-foreground"
+                    )}
+                    type="button"
+                  >
+                    <CalendarIcon />
+                    {date ? format(date, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent  className="w-auto p-0 z-[9999]" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={date}
+                    onSelect={setDate}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+
+              <div className="mb-4">
+                <label className="block text-[18px] font-medium mb-2">Preferred OTP Method</label>
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="otpMethod"
+                      value="sms"
+                      checked={otpMethod === 'sms'}
+                      onChange={(e) => setOtpMethod(e.target.value)}
+                      className="mr-2"
+                    />
+                    SMS
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="otpMethod"
+                      value="whatsapp"
+                      checked={otpMethod === 'whatsapp'}
+                      onChange={(e) => setOtpMethod(e.target.value)}
+                      className="mr-2"
+                    />
+                    Whatsapp
+                  </label>
+                  {/* Add more options like WhatsApp if needed */}
+                </div>
+              </div>
+
+              <button 
+                onClick={nextStep}
+                className="primary-button mt-auto">
+                Continue
+              </button>
+            </div>
+          </div>
+        </>
       )
     case 2:
       return (
-        // <div className="h-full flex flex-col items-center justify-center">
-        //   <h3 className="mb-4">Enter OTP</h3>
-        //   <p className="text-center mb-6">A verification code has been sent to your {otpMethod === 'sms' ? 'phone number' : 'email address'}.</p>
-        //   <div className="flex justify-between">
-        //     {otp.map((digit, index) => (
-        //       <input
-        //         key={index}
-        //         type="text"
-        //         inputMode="numeric"
-        //         pattern="[0-9]*"
-        //         maxLength={1}
-        //         value={digit}
-        //         onChange={(e) => {
-        //           // Only allow numeric input
-        //           const value = e.target.value.replace(/[^0-9]/g, '');
-        //           handleOTPInputChange(index, value, e);
-        //         }}
-        //         onKeyDown={(e) => handleKeyDown(index, e)}
-        //         onFocus={() => setFocusedInput(index)}
-        //         onBlur={() => setFocusedInput(null)}
-        //         ref={el => inputRefs.current[index].current = el}
-        //         //ref={el => (inputRefs.current[index] = el)}
-        //         //ref={inputRefs[index]}
-        //         className={`border-2 ${
-        //             focusedInput == index
-        //                 ? 'border-primary' 
-        //                 : 'border-[#89ABD940]'
-        //         } rounded-[5px] w-[15%] h-[60px] text-center text-[20px] font-primary text-primary`}
-        //       />
-        //     ))}
-        //   </div>
-
-        //   <button onClick={nextStep} className="primary-button mt-8 w-full">Verify OTP</button>
-        //   <button 
-        //     className="mt-4 text-blue-600 text-sm" 
-        //     onClick={() => console.log('Resend OTP')}>
-        //     Resend OTP
-        //   </button>
-        // </div>
-        <OTPInputComponent
-          otp={otp}
-          inputRefs={inputRefs}
-          focusedInput={focusedInput}
-          setFocusedInput={setFocusedInput}
-          handleOTPInputChange={handleOTPInputChange}
-          handleKeyDown={handleKeyDown}
-          onContinue={nextStep}
-          otpMethod={otpMethod}
-        />
+        <div className="h-full flex flex-col items-center justify-center">
+          <h3 className="mb-4">Enter OTP</h3>
+          <p className="text-center mb-6">A verification code has been sent to your {otpMethod === 'sms' ? 'phone number' : 'email address'}.</p>
+          <input
+            type="text" // Or 'number' for numeric input, but text is common for OTPs
+            className="w-1/2 px-[20px] py-[14px] border bg-transparent border-[#E5E5E5] text-center text-2xl tracking-[1em] focus:outline-none"
+            maxLength="6" // Assuming a 6-digit OTP
+            value={otp}
+            onChange={(e) => setOtp(e.target.value)}
+            placeholder="______"
+          />
+          <button
+            onClick={nextStep} // Or a dedicated handleOtpSubmit
+            className="primary-button mt-8 w-full"
+          >
+            Verify OTP
+          </button>
+          <button 
+            className="mt-4 text-blue-600 text-sm" 
+            onClick={() => console.log('Resend OTP')}>
+            Resend OTP
+          </button>
+        </div>
       )
     case 3: 
       return (
@@ -847,3 +789,66 @@ function App() {
 }
 
 export default App
+
+// components/OTPInputComponent.jsx
+import React from 'react';
+import { useOTP } from '../hooks/useOTP'; // Adjust path
+
+const OTPInputComponent = ({ length, onVerify }) => {
+    const {
+        otp,
+        inputRefs,
+        handleOTPInputChange,
+        handleKeyDown,
+        isComplete,
+        focusedInput,
+        setFocusedInput
+    } = useOTP({ length }); // currentStep is no longer needed here, as the component itself mounts when needed
+
+    const handleSubmit = () => {
+        if (isComplete) {
+            onVerify(otp.join(''));
+        }
+    };
+
+    return (
+        <div className="h-full flex flex-col items-center justify-center">
+            <h3 className="mb-4">Enter OTP</h3>
+            <p className="text-center mb-6">A verification code has been sent to your phone number.</p> {/* dynamic text here if needed */}
+            <div className="flex justify-between">
+                {otp.map((digit, index) => (
+                    <input
+                        key={index}
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={1}
+                        value={digit}
+                        onChange={(e) => {
+                            const value = e.target.value.replace(/[^0-9]/g, '');
+                            handleOTPInputChange(index, value, e);
+                        }}
+                        onKeyDown={(e) => handleKeyDown(index, e)}
+                        onFocus={() => setFocusedInput(index)}
+                        onBlur={() => setFocusedInput(null)}
+                        ref={el => (inputRefs.current[index] = el)} // Direct assignment
+                        className={`border-2 ${
+                            focusedInput == index
+                                ? 'border-primary'
+                                : 'border-[#89ABD940]'
+                        } rounded-[5px] w-[15%] h-[60px] text-center text-[20px] font-primary text-primary`}
+                    />
+                ))}
+            </div>
+
+            <button onClick={handleSubmit} disabled={!isComplete} className="primary-button mt-8 w-full">Verify OTP</button>
+            <button
+                className="mt-4 text-blue-600 text-sm"
+                onClick={() => console.log('Resend OTP')}>
+                Resend OTP
+            </button>
+        </div>
+    );
+};
+
+export default OTPInputComponent;
