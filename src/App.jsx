@@ -7,7 +7,6 @@ import check_circle from './assets/icons/shield-check.svg'
 import pencil from './assets/icons/pencil.svg'
 import cloud_upload from "./assets/icons/cloud-upload.svg"
 import { Lock, Landmark, User, ChevronUp } from 'lucide-react';
-import { Calendar as CalendarIcon } from "lucide-react"
 // import { ConnectButton } from '@rainbow-me/rainbowkit';
 // import { useAccount } from 'wagmi'
 // import { QueryClient } from "@tanstack/react-query";
@@ -17,19 +16,12 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
-import { format } from "date-fns"
-import { cn } from "@/lib/utils"
 import Webcam from 'react-webcam';
 import userData from "../user.json";
 import { useOTP } from './hooks/useOTP'; 
 import { useResendTimer } from './hooks/useResendTimer';
+import { PhoneInputStep } from './components/PhoneInputStep';
+import { OtpInput } from './components/OtpInput';
 
 const Welcome = ({ onContinue }) => {
   return (
@@ -73,187 +65,19 @@ const Welcome = ({ onContinue }) => {
   );
 }
 
-const PersonalInfoStep = ({ 
-  phoneNumber,
-  setPhoneNumber,
-  date,
-  setDate,
-  otpMethod,
-  setOtpMethod,
-  onContinue
-}) => {
+const Success = ({}) => {
   return (
-    <div className="h-full flex flex-col">
-      <div className="text-center mb-4">
-        <h3>Personal Information</h3>
+    <div className="flex flex-col items-center justify-center">
+      <img src={check_circle} alt="" className="feature-icon" />
+      <div className="mt-2 text-center">
+        <h4 className="">
+          Verification data submitted successfully!
+        </h4>
       </div>
-      <div className="flex-1 flex flex-col py-[20px]">
-        <div className="mb-3">
-          <label htmlFor="phone" className="block text-[18px] font-medium">
-            Phone Number
-          </label>
-          <input
-            type="tel"
-            className="w-full px-[20px] py-[14px] border bg-transparent border-[#E5E5E5] focus:outline-none"
-            id="phone"
-            placeholder="Enter phone number"
-            value={phoneNumber}
-            onChange={(e) => setPhoneNumber(e.target.value)}
-          />
-        </div>
-
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant={"outline"}
-              className={cn(
-                "w-[240px] justify-start text-left font-normal",
-                !date && "text-muted-foreground"
-              )}
-              type="button"
-            >
-              <CalendarIcon />
-              {date ? format(date, "PPP") : <span>Pick a date</span>}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0 z-[9999]" align="start">
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={setDate}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
-
-        <div className="mb-4">
-          <label className="block text-[18px] font-medium mb-2">Preferred OTP Method</label>
-          <div className="flex items-center gap-4">
-            <label className="flex items-center">
-              <input
-                type="radio"
-                name="otpMethod"
-                value="sms"
-                checked={otpMethod === 'sms'}
-                onChange={(e) => setOtpMethod(e.target.value)}
-                className="mr-2"
-              />
-              SMS
-            </label>
-            <label className="flex items-center">
-              <input
-                type="radio"
-                name="otpMethod"
-                value="whatsapp"
-                checked={otpMethod === 'whatsapp'}
-                onChange={(e) => setOtpMethod(e.target.value)}
-                className="mr-2"
-              />
-              Whatsapp
-            </label>
-          </div>
-        </div>
-
-        <button onClick={onContinue} className="primary-button mt-auto">Continue</button>
-      </div>
-    </div>
-  );
-}
-
-const OtpInputStep = ({ 
-  phoneNumber,
-  otp, 
-  inputRefs,
-  focusedInput,
-  onContinue,
-  setFocusedInput,
-  handleOTPInputChange,
-  handleKeyDown,
-  otpMethod
-}) => {
-  const {
-    resendIsDisabled,
-    formattedTime,
-    resetTimer
-  } = useResendTimer(120);
-  const [isResending, setIsResending] = useState(false); // New state to manage loading for resend
-  const handleResendOTP = async () => {
-    setIsResending(true); // Set loading state to true
-    try{
-      // For now, simulate a successful API call with a delay
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate 2-second API delay
-      //console.log(`OTP resent to ${phoneNumber} via ${otpMethod}.`);
-      alert('New OTP sent!'); // User feedback
-      resetTimer(); // Reset the timer ONLY after a successful API call
-      // --- End Simulate API Request ---
-    }catch (error) {
-      console.error('Error resending OTP:', error);
-      alert('Failed to resend OTP. Please try again.'); // User feedback for error
-    } finally {
-      setIsResending(false); // Reset loading state
-    }
-  };
-
-  return (
-    <div className="h-full flex flex-col items-center">
-      <h3 className="mb-4">Enter OTP</h3>
-      <p className="text-center mb-6">A verification code has been sent to your {otpMethod === 'sms' ? 'phone number' : 'email address'}.</p>
-      <div className="h-full flex flex-col pb-[20px]">
-        <div className="flex justify-between">
-          {otp.map((digit, index) => (
-            <input
-              key={index}
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              maxLength={1}
-              value={digit}
-              onChange={(e) => {
-                // Only allow numeric input
-                const value = e.target.value.replace(/[^0-9]/g, '');
-                handleOTPInputChange(index, value, e);
-              }}
-              onKeyDown={(e) => handleKeyDown(index, e)}
-              onFocus={() => setFocusedInput(index)}
-              onBlur={() => setFocusedInput(null)}
-              ref={el => inputRefs.current[index].current = el}
-              //ref={el => (inputRefs.current[index] = el)}
-              //ref={inputRefs[index]}
-              className={`border-2 ${
-                  focusedInput == index
-                      ? 'border-primary' 
-                      : 'border-[#89ABD940]'
-              } rounded-[5px] w-[15%] h-[60px] text-center text-[20px] font-primary text-primary`}
-            />
-          ))}
-        </div>
-
-        <div className="">
-          {/* <p className="text-sm text-gray-500 mt-4">
-            Enter the 6-digit code sent to your {otpMethod === 'sms' ? 'phone number' : 'email address'}.
-          </p> */}
-          <p className="text-sm text-gray-500 mt-4">
-            Did not receive the code? 
-            <button
-              type="button"
-              disabled={resendIsDisabled}
-              onClick={handleResendOTP}
-              className="cursor-pointer text-blue-600 ml-1 bg-transparent border-none p-0 font-inherit"
-            >
-              {/* {otpMethod === 'sms' ? 'Resend via SMS' : 'Resend via Email'}  */}
-               {isResending ? 'Sending...' : 'Resend code'}
-            </button>
-            <span className="ml-1">
-              in {formattedTime}
-            </span>
-          </p>
-        </div>
-
-      <button 
-        onClick={onContinue} 
-        disabled={!otp.every(digit => digit !== '')} // Disable if any input is empty
-        className="primary-button mt-auto w-full disabled:opacity-50 disabled:bg-gray-400 disabled:cursor-not-allowed mt-auto w-full">
-      Verify OTP</button>
+      <div className="mt-2 text-center">
+        <p className="mb-0 feature-text">
+          Redirecting you in <span id="countdown">5</span> seconds.
+        </p>
       </div>
     </div>
   )
@@ -262,7 +86,7 @@ const OtpInputStep = ({
 const VerificationDocument = ({ 
   doc, 
   isLast,
-  onToggleVerified, 
+  onToggleShared, 
   onFileUpload
 })  => {
   const getEditAction = (type) => {
@@ -275,6 +99,17 @@ const VerificationDocument = ({
       default: return 'edit-other';
     }
   };
+  const maskText = (text) => {
+    if (!text || text.length <= 7) {
+      // If the text is null, empty, or too short to mask (e.g., less than 7 digits for 3+4 pattern)
+      // return the text as is or handle as an error.
+      return text;
+    }
+    const firstThree = text.substring(0, 3);
+    const lastFour = text.substring(text.length - 4);
+    const stars = '*'.repeat(text.length - 7); // Calculate the number of stars needed
+    return `${firstThree}${stars}${lastFour}`;
+  };
   const showRedAsterisk = doc.type === 'NIN' || doc.type === 'BVN';
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -285,7 +120,7 @@ const VerificationDocument = ({
   };
 
   const handleCheckboxChange = (e) => {
-    //onToggleVerified(doc.id, e.target.checked);
+    onToggleShared(doc.id, e.target.checked);
   };
 
   return (
@@ -303,7 +138,7 @@ const VerificationDocument = ({
         <div className="flex items-center gap-1">
           {doc.verified ? (
             <>
-              <span style={{ fontSize: '14px' }}>{doc.text}</span>
+              <span style={{ fontSize: '14px' }}>{maskText(doc.text)}</span>
               <a
                 className="p-0 cursor-pointer"
                 data-id={doc.id}
@@ -326,9 +161,7 @@ const VerificationDocument = ({
                 type="checkbox"
                 id={`verified-${doc.id}`}
                 name={doc.type.toLowerCase()}
-                checked={doc.verified}
-                // data-doc-id={doc.id}
-                // data-doc-type={doc.type}
+                checked={doc.shared}
                 onChange={handleCheckboxChange}
                 className="sr-only peer"
               />
@@ -336,6 +169,7 @@ const VerificationDocument = ({
             </label>
           </div>
         ) : (
+          doc.type != 'NIN' && doc.type != 'BVN' ? (
           <div>
             <label
               htmlFor={`file-${doc.id}`}
@@ -351,7 +185,7 @@ const VerificationDocument = ({
               accept=".pdf,.jpg,.jpeg,.png"
               onChange={handleFileChange}
             />
-          </div>
+          </div>) : null
         )}
       </div>
     </div>
@@ -376,8 +210,8 @@ function App() {
   };
   // const queryClient = new QueryClient();
   const [user, setUser] = useState(userData);
+  const [documents, setDocuments] = useState(user.verification_documents || []);
   const [uploadedFiles, setUploadedFiles] = useState({});
-  const [date, setDate] = useState(undefined);
 
   const [phoneNumber, setPhoneNumber] = useState('+2348114800769');
   const [otpMethod, setOtpMethod] = useState(''); // e.g., 'sms', 'email', 'whatsapp'
@@ -479,15 +313,22 @@ function App() {
   };
 
   // Handle checkbox toggle
-  const handleToggleVerified = (docId, isChecked) => {
+  const handleToggleShare = (docId, isShared) => {
     // setUser(prevUser => ({
     //   ...prevUser,
     //   verification_documents: prevUser.verification_documents.map(doc =>
     //     doc.id === docId 
-    //       ? { ...doc, verified: isChecked }
+    //       ? { ...doc, verified: isShared }
     //       : doc
     //   )
     // }));
+    setDocuments(prev => 
+      prev.map(doc =>
+        doc.id === docId 
+          ? { ...doc, shared: isShared }
+          : doc
+      )
+    );
     console.log(`Document ${docId} verif`);
   }
 
@@ -509,19 +350,17 @@ function App() {
         return <Welcome onContinue={nextStep} />;
       case 1: 
       return (
-        <PersonalInfoStep
+        <PhoneInputStep
           phoneNumber={phoneNumber}
           setPhoneNumber={setPhoneNumber}
-          date={date}
-          setDate={setDate}
+          onContinue={nextStep}
           otpMethod={otpMethod}
           setOtpMethod={setOtpMethod}
-          onContinue={nextStep}
         />
       )
     case 2:
       return (
-        <OtpInputStep
+        <OtpInput
           phoneNumber={phoneNumber}
           otp={otp}
           inputRefs={inputRefs}
@@ -566,7 +405,35 @@ function App() {
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="accordion-content">
-                      Yes. It adheres to the WAI-ARIA design pattern.
+                      <div className="p-3 space-y-3">
+                        {/* Name */}
+                        <div className="py-2 border-b border-gray-100">
+                          <div className="text-sm font-medium">Full Name</div>
+                          <div className="text-xs text-gray-500">{user.firstname} {user.lastname}</div>
+                        </div>
+                        {/* Email */}
+                        <div className="py-2 border-b border-gray-100">
+                          <div className="text-sm font-medium">Email Address</div>
+                          <div className="text-xs text-gray-500">{user.email}</div>
+                        </div>
+                        {/* Phone */}
+                        <div className="py-2 border-b border-gray-100">
+                          <div className="text-sm font-medium">Phone Number</div>
+                          <div className="text-xs text-gray-500">{user.phone}</div>
+                        </div>
+                        {/* Date of Birth */}
+                        <div className="py-2 border-b border-gray-100">
+                          <div className="text-sm font-medium">Date of Birth</div>
+                          <div className="text-xs text-gray-500">{new Date(user.dob).toLocaleDateString()}</div>
+                        </div>
+                        {/* Address */}
+                        <div className="py-2">
+                          <div className="text-sm font-medium">Address</div>
+                          <div className="text-xs text-gray-500">
+                            {user.address}, {user.city}, {user.state} {user.zip_code}
+                          </div>
+                        </div>
+                      </div>
                     </AccordionContent>
                   </AccordionItem>
                   <AccordionItem value="item-2" className="accordion-header">
@@ -588,14 +455,14 @@ function App() {
                     </AccordionTrigger>
                     <AccordionContent className="accordion-content">
                       {
-                        user.verification_documents
-                        .filter(doc => doc.type === "NIN" || doc.type === "BVN")
+                        documents.filter(doc => doc.type === "NIN" || doc.type === "BVN")
                         .map((doc, index, arr) => (
                           <VerificationDocument
                             key={doc.id}
                             doc={doc}
                             isLast={index === arr.length - 1}
                             onFileUpload={handleFileUpload}
+                            onToggleShared={handleToggleShare}
                           />
                         ))
                       }
@@ -603,14 +470,14 @@ function App() {
                         <div class="text-[12px]">At least one of these <span className="ml-[2px]" style={{ color: 'red' }}>*</span></div>
                       </div>
                       {
-                        user.verification_documents
-                        .filter(doc => doc.type !== "NIN" && doc.type !== "BVN")
+                        documents.filter(doc => doc.type !== "NIN" && doc.type !== "BVN")
                         .map((doc, index, arr) => (
                           <VerificationDocument
                             key={doc.id}
                             doc={doc}
                             isLast={index === arr.length - 1}
                             onFileUpload={handleFileUpload}
+                            onToggleShared={handleToggleShare}
                           />
                         ))
                       }
@@ -692,10 +559,10 @@ function App() {
       )
     case 4:
       return (
-        <div className="h-full flex flex-col items-center justify-center">
-          <h3 className="mb-4">Choose Access Type & Facial Recognition</h3>
+        <div className="h-full flex flex-col">
+          {/* <h3 className="mb-4">Choose Access Type & Facial Recognition</h3> */}
 
-          <div className="mb-6">
+          {/* <div className="mb-6">
             <label className="block text-[18px] font-medium mb-2">Select Access Type</label>
             <div className="flex items-center gap-4">
               <label className="flex items-center">
@@ -721,16 +588,15 @@ function App() {
                 Limited Access
               </label>
             </div>
-          </div>
+          </div> */}
 
-          <div className="mb-6 text-center">
+          <div className="flex flex-1 flex-col pb-[20px] text-center items-center">
             <h4 className="mb-2">Facial Recognition</h4>
             <p className="text-sm text-gray-600 mb-4">Please position your face clearly in the camera for verification.</p>
             
             {/* Webcam Component */}
             {!faceScanActive ? (
               <div className="w-[200px] h-[200px] rounded-full bg-gray-200 flex items-center justify-center overflow-hidden mb-4 relative">
-              {/* <div className="w-full h-64 bg-gray-200 flex items-center justify-center rounded-lg overflow-hidden mb-4 relative"> */}
                 {imgSrc ? (
                   <img src={imgSrc} alt="Captured Face" className="w-full h-full object-cover" />
                 ) : (
@@ -743,7 +609,7 @@ function App() {
                       setFaceScanActive(true); // Restart scan
                       setFaceScanStatus('');
                     }}
-                    className="absolute top-2 right-2 p-1 bg-white rounded-full text-gray-700 hover:text-gray-900"
+                    className="border-2 border-[#E5E5E5] absolute top-2 right-2 p-1 bg-white rounded-full text-gray-700 hover:text-gray-900"
                     title="Retake photo"
                   >
                     <img src={pencil} width="16" alt="Retake" />
@@ -766,10 +632,6 @@ function App() {
                 />
               </div>
             )}
-            {/* <div className="w-64 h-48 bg-gray-200 flex items-center justify-center rounded-lg mb-4">
-              <p className="text-gray-500">Webcam Feed Here</p>
-             
-            </div> */}
 
             {faceScanStatus && <p className="text-sm mt-2">{faceScanStatus}</p>}
             {/* Buttons for facial scan */}
@@ -799,35 +661,19 @@ function App() {
                    </button>
                 )}
               </div>
+              <button
+                onClick={nextStep}
+                className="primary-button mt-auto w-full"
+                disabled={!imgSrc || faceScanActive} // Disable if no image captured or scan active
+              >
+                Continue
+              </button>
             </div>
-
-          <button
-            onClick={nextStep}
-            className="primary-button mt-auto w-full"
-            disabled={!imgSrc || faceScanActive} // Disable if no image captured or scan active
-          >
-            Continue
-          </button>
+          
         </div>
       )
     case 5: 
-      return (
-        <>
-          <div className="flex flex-col items-center justify-center">
-            <img src={check_circle} alt="" className="feature-icon" />
-            <div className="mt-2 text-center">
-              <h4 className="">
-                Verification data submitted successfully!
-              </h4>
-            </div>
-            <div className="mt-2 text-center">
-              <p className="mb-0 feature-text">
-                Redirecting you in <span id="countdown">5</span> seconds.
-              </p>
-            </div>
-          </div>
-        </>
-      )
+      return <Success />;
       default:
         return null;
     }

@@ -83,13 +83,14 @@ h1,.h1,h2,.h2,h3,.h3,h4,.h4,h5,.h5,h6,.h6{
     align-items: center;
     z-index: 1000;
     padding: 0 20px;
+    overflow: auto
 }
 .modal-content {
     background: white;
     border-radius: 12px;
     width: 400px;
     position: relative;
-    height: 520px;
+    height: 550px;
     /* overflow-y: auto; */
     padding: 0 15px !important;
 }
