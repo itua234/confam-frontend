@@ -173,9 +173,10 @@ export const PhoneInputStep = ({
                 </div>
 
                 <button 
-                    onClick={onContinue} 
-                    className="primary-button mt-auto">
-                Continue</button>
+                onClick={onContinue} 
+                className="primary-button mt-auto">
+                    Continue
+                </button>
             </div>
         </div>
     );
