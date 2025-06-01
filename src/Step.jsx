@@ -213,3 +213,30 @@ function App() {
 }
 
 export default App
+
+ {/* <Popover>
+                <PopoverTrigger asChild>
+                    <Button
+                    variant={"outline"}
+                    className={cn(
+                        "w-full px-[20px] py-[24px] rounded-none justify-start text-left font-normal",
+                        !date && "text-muted-foreground"
+                    )}
+                    >
+                        <CalendarIcon />
+                        {date ? format(date, "PPP") : <span>Date of Birth</span>}
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 z-[9999]" align="start">
+                    <Calendar
+                    mode="single"
+                    selected={date}
+                    onSelect={setDate}
+                    initialFocus
+                    // Add this prop to enable dropdowns for month and year
+                    captionLayout="dropdown-years"
+                    fromYear={1950} // Optional: define a year range for dropdowns
+                    toYear={2050}
+                    />
+                </PopoverContent>
+            </Popover> */}
