@@ -1,12 +1,14 @@
-import React, { useState, useRef, useCallback } from 'react';
-// import reactLogo from './assets/react.svg'
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import { useParams } from 'react-router-dom';
 import upload from './assets/icons/cloud-upload.svg'
+import loader from './assets/loader.gif'
 import eye from './assets/icons/eye-off.svg'
+import info from './assets/icons/info.svg'
 import shield from './assets/icons/shield-check.svg'
 import check_circle from './assets/icons/shield-check.svg'
 import pencil from './assets/icons/pencil.svg'
 import cloud_upload from "./assets/icons/cloud-upload.svg"
-import { Lock, Landmark, User, ChevronUp } from 'lucide-react';
+import { Lock, Landmark, User, ArrowUp, Plus } from 'lucide-react';
 // import { ConnectButton } from '@rainbow-me/rainbowkit';
 // import { useAccount } from 'wagmi'
 // import { QueryClient } from "@tanstack/react-query";
@@ -15,13 +17,33 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/components/ui/accordion"
+} from "@/components/ui/accordion";
 import Webcam from 'react-webcam';
 import userData from "../user.json";
 import { useOTP } from './hooks/useOTP'; 
 import { useResendTimer } from './hooks/useResendTimer';
 import { PhoneInputStep } from './components/PhoneInputStep';
 import { OtpInput } from './components/OtpInput';
+import AccordionTriggerContent from './components/ui/accordion-trigger-content';
+import apiClient from './api/client';
+
+
+// --- Error Section Component (New) ---
+const ErrorSection = ({ message, onRetry }) => (
+  <div className="flex flex-col items-center justify-center h-full pb-[20px] text-center">
+    <img src={info} className="mb-2 w-[50px] h-[50px]" /> {/* Example error icon */}
+    <h3 className="text-xl font-semibold mb-2">Invalid link</h3>
+    <p className="text-gray-700 mb-6">Invalid request, please check and try again</p>
+    {onRetry && (
+      <div className="mt-auto w-full">
+        <p className="text-gray-700 text-[12px]">Interested in knowing why Confam is involved?</p>
+        <button onClick={onRetry} className="primary-button">
+          Learn More
+        </button>
+      </div>
+    )}
+  </div>
+);
 
 const Welcome = ({ onContinue }) => {
   return (
@@ -175,7 +197,8 @@ const VerificationDocument = ({
               htmlFor={`file-${doc.id}`}
               className="upload-btn flex items-center justify-center"
             >
-              <span>Upload</span>
+              <ArrowUp size={18} />
+              <span className="ml-[8px]">Upload</span>
             </label>
             <input
               type="file"
@@ -193,6 +216,13 @@ const VerificationDocument = ({
 }
 
 function App() {
+  const { kyc_token } = useParams();
+  const client = useMemo(() => apiClient("http://localhost:8080/api/v1/"), []);
+  // if (!kycToken) {
+  //   setError('KYC token missing in URL.');
+  //   setLoading(false);
+  //   return;
+  // }
   const [currentStep, setCurrentStep] = useState(0);
   const totalSteps = 5;
   const nextStep = () => {
@@ -208,10 +238,43 @@ function App() {
   const goToStep = (step) => {
     setCurrentStep(step);
   };
+
+  // --- NEW STATE FOR ERROR HANDLING ---
+  const [hasError, setHasError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isAppLoading, setIsAppLoading] = useState(true); // To show loading state for the whole app
+  const [kycLevel, setKycLevel] = useState('tier_1'); // To store KYC tier if needed
+  const [bankIsRequested, setBankIsRequested] = useState(false);
+  
+  // Simulate fetching initial data based on kyc_token
+  useEffect(() => {
+    const fetchRequestData = async () => {
+      try {
+        const response = await client.get(`/allow/${kyc_token}`, {
+          headers: {
+            Accept: 'application/json',
+            Authorization: `Bearer ${kyc_token}`,
+          },
+        });
+        //console.log('App config:', response.data);
+        setKycLevel(response.data.results.kyc_level);
+        setBankIsRequested(response.data.results.bank_accounts_requested);
+      } catch (error) {
+        console.error('Error fetching KYC request:', error);
+        setHasError(true);
+        setErrorMessage(error.message || 'Failed to load KYC request. Please try again.');
+      } finally {
+        setIsAppLoading(false);
+      }
+    };
+    fetchRequestData();
+  }, []); // Re-run effect if ID changes
+
   // const queryClient = new QueryClient();
   const [user, setUser] = useState(userData);
   const [documents, setDocuments] = useState(user.verification_documents || []);
   const [uploadedFiles, setUploadedFiles] = useState({});
+
 
   const [phoneNumber, setPhoneNumber] = useState('+2348114800769');
   const [otpMethod, setOtpMethod] = useState(''); // e.g., 'sms', 'email', 'whatsapp'
@@ -225,15 +288,16 @@ function App() {
     setFocusedInput
   } = useOTP({ length: 6, currentStep });
 
-  const [addressLine1, setAddressLine1] = useState('');
-  const [city, setCity] = useState('');
-  const [state, setState] = useState('');
-  const [zipCode, setZipCode] = useState('');
-  const [country, setCountry] = useState('Nigeria');
 
-  const [bankName, setBankName] = useState('');
-  const [accountNumber, setAccountNumber] = useState('');
-  const [accountName, setAccountName] = useState('');
+  // const [addressLine1, setAddressLine1] = useState('');
+  // const [city, setCity] = useState('');
+  // const [state, setState] = useState('');
+  // const [zipCode, setZipCode] = useState('');
+  // const [country, setCountry] = useState('Nigeria');
+
+  // const [bankName, setBankName] = useState('');
+  // const [accountNumber, setAccountNumber] = useState('');
+  // const [accountName, setAccountName] = useState('');
   const [bankAccounts, setBankAccounts] = useState([]);
 
   const [accessType, setAccessType] = useState(''); // e.g., 'full', 'limited'
@@ -314,14 +378,6 @@ function App() {
 
   // Handle checkbox toggle
   const handleToggleShare = (docId, isShared) => {
-    // setUser(prevUser => ({
-    //   ...prevUser,
-    //   verification_documents: prevUser.verification_documents.map(doc =>
-    //     doc.id === docId 
-    //       ? { ...doc, verified: isShared }
-    //       : doc
-    //   )
-    // }));
     setDocuments(prev => 
       prev.map(doc =>
         doc.id === docId 
@@ -345,6 +401,20 @@ function App() {
   };
 
   const renderStepContent = () => {
+    if (isAppLoading) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full">
+          <img src={loader} alt="Loading..." className="w-7 h-7" />
+        </div>
+      );
+    }
+
+    if (hasError) {
+      return (
+        <ErrorSection message={errorMessage} onRetry={() => setCurrentStep(0)} /> // Reset step to 0 for retry
+      );
+    }
+
     switch(currentStep) {
       case 0:
         return <Welcome onContinue={nextStep} />;
@@ -384,25 +454,12 @@ function App() {
                 <Accordion type="single" collapsible>
                   <AccordionItem value="item-1" className="accordion-header">
                     <AccordionTrigger className="accordion-trigger">
-                      <div className="w-full flex items-center justify-between">
-                        <div className="flex items-center">
-                            <div className="rounded-full flex items-center justify-center h-[35px] w-[35px] border border-[#bbb]">
-                              <User size={18} />
-                            </div>
-                            <div className="flex flex-col mx-2">
-                              <span className="">Personal Information</span>
-                              <span className="text-[12px]">5 items</span>
-                            </div>
-                        </div>
-                        <div className="">
-                          <div className="flex items-center justify-center w-[20px] h-[20px] rounded-full bg-[#222831]">
-                            <svg className="w-4 h-4" fill="none" stroke="white" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
-                          </div>
-                          {/* <img src={cloud_upload} className="" width="18" /> */}
-                        </div>
-                      </div>
+                      <AccordionTriggerContent
+                        icon={User}           // Pass the User icon component
+                        title="Personal Information"
+                        subtitle={5+ ' items'} // Dynamic subtitle, e.g., number of items
+                        isComplete={true}     // Set to true if this section is completed, false otherwise
+                      />
                     </AccordionTrigger>
                     <AccordionContent className="accordion-content">
                       <div className="p-3 space-y-3">
@@ -438,20 +495,12 @@ function App() {
                   </AccordionItem>
                   <AccordionItem value="item-2" className="accordion-header">
                     <AccordionTrigger className="accordion-trigger">
-                      <div className="w-full flex items-center justify-between">
-                        <div className="flex items-center">
-                            <div className="rounded-full flex items-center justify-center h-[35px] w-[35px] border border-[#bbb]">
-                              <Lock size={18} />
-                            </div>
-                            <div className="flex flex-col mx-2">
-                              <span className="">Verification documents</span>
-                              <span className="text-[12px]">5 documents</span>
-                            </div>
-                        </div>
-                        <div className="">
-                          <ChevronUp size={18} />
-                        </div>
-                      </div>
+                      <AccordionTriggerContent
+                        icon={Lock}           // Pass the User icon component
+                        title="Verification documents"
+                        subtitle={5+ ' documents'} // Dynamic subtitle, e.g., number of items
+                        isComplete={false}     // Set to true if this section is completed, false otherwise
+                      />
                     </AccordionTrigger>
                     <AccordionContent className="accordion-content">
                       {
@@ -466,44 +515,59 @@ function App() {
                           />
                         ))
                       }
-                      <div className="px-3 py-3">
-                        <div class="text-[12px]">At least one of these <span className="ml-[2px]" style={{ color: 'red' }}>*</span></div>
-                      </div>
-                      {
-                        documents.filter(doc => doc.type !== "NIN" && doc.type !== "BVN")
-                        .map((doc, index, arr) => (
-                          <VerificationDocument
-                            key={doc.id}
-                            doc={doc}
-                            isLast={index === arr.length - 1}
-                            onFileUpload={handleFileUpload}
-                            onToggleShared={handleToggleShare}
-                          />
-                        ))
-                      }
+                      {(kycLevel === 'tier_2' || kycLevel === 'tier_3') && (
+                        <>
+                          <div className="px-3 py-3">
+                            <div class="text-[12px]">At least one of these <span className="ml-[2px]" style={{ color: 'red' }}>*</span></div>
+                          </div>
+                          {
+                            documents.filter(doc => doc.type !== "NIN" && doc.type !== "BVN" && doc.type !== "Utility Bill")
+                            .map((doc, index, arr) => (
+                              <VerificationDocument
+                                key={doc.id}
+                                doc={doc}
+                                isLast={index === arr.length - 1}
+                                onFileUpload={handleFileUpload}
+                                onToggleShared={handleToggleShare}
+                              />
+                            ))
+                          }
+                        </>
+                      )}
+                      {(kycLevel === 'tier_3') && (
+                        <>
+                          <div className="px-3 py-3">
+                            <div className="text-[12px]">Address Verification <span className="ml-[2px]" style={{ color: 'red' }}>*</span></div>
+                          </div>
+                          {
+                            documents.filter(doc => doc.type === "Utility Bill")
+                            .map((doc, index, arr) => (
+                              <VerificationDocument
+                                key={doc.id}
+                                doc={doc}
+                                isLast={index === arr.length - 1}
+                                onFileUpload={handleFileUpload}
+                                onToggleShared={handleToggleShare}
+                              />
+                            ))
+                          }
+                        </>
+                      )}
                     </AccordionContent>
                   </AccordionItem>
                   {
-                    !user.bank_accounts && (
+                    bankIsRequested && (
                       <AccordionItem value="item-3" className="accordion-header">
                         <AccordionTrigger className="accordion-trigger">
-                          <div className="w-full flex items-center justify-between">
-                            <div className="flex items-center">
-                                <div className="rounded-full flex items-center justify-center h-[35px] w-[35px] border border-[#bbb]">
-                                  <Landmark size={18} />
-                                </div>
-                                <div className="flex flex-col mx-2">
-                                  <span className="">Bank accounts</span>
-                                  <span className="text-[12px]">2 accounts</span>
-                                </div>
-                            </div>
-                            <div className="">
-                              <ChevronUp size={18} />
-                            </div>
-                          </div>
+                          <AccordionTriggerContent
+                            icon={Landmark}           // Pass the User icon component
+                            title="Bank accounts"
+                            subtitle={bankAccounts.length+ ' accounts'} // Dynamic subtitle, e.g., number of items
+                            isComplete={false}     // Set to true if this section is completed, false otherwise
+                          />
                         </AccordionTrigger>
-                        <AccordionContent className="accordion-content">
-                          <div className="p-3">
+                        <AccordionContent className="bank-accordion-content">
+                          {/* <div className="p-3">
                             <div className="mb-3">
                               <label htmlFor="bankName" className="block text-sm font-medium mb-1">Bank Name</label>
                               <input
@@ -538,11 +602,27 @@ function App() {
                                 readOnly // Often read-only after fetching from API
                               />
                             </div>
-                            {/* Potentially add a button to "Verify Bank Account" here */}
+                          </div> */}
+                            {[...Array(2).keys()].map((index) => (
+                              <div key={index} className="flex items-center justify-between mb-[20px]">
+                                <div className="">
+                                  <h5>OSEMEILU ITUA ENDURANCE</h5>
+                                  <h6>201989929992</h6>
+                                  <h6>United Bank For Africa</h6>
+                                </div>
+                                <div className="">
+                                  <Lock size={18} />
+                                </div>
+                              </div>
+                            ))}
+                          <div className="flex flex-1 items-center justify-center">
+                            <div className="cursor-pointer w-3/4 h-[100px] flex items-center justify-center border-2 border-dashed border-gray-300 bg-[#F8F8F8]">
+                              <Plus size={30} />
+                            </div>
                           </div>
                         </AccordionContent>
                       </AccordionItem>
-                     )
+                    )
                   }
                 </Accordion>
               </div>

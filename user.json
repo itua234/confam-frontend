@@ -70,6 +70,17 @@
             "shared": true,
             "verified_at": null,
             "expired_at": "2032-04-01T10:00:00Z"
+        },
+        {
+            "id": "123e0467-e984-12d3-a456-426614174000",
+            "user_id": "550e8400-e29b-41d4-a716-446655440000",
+            "type": "Utility Bill",
+            "text": "12345678901",
+            "image": "https://example.com/bvn.jpg",
+            "verified": false,
+            "shared": true,
+            "verified_at": "2024-04-01T10:00:00Z",
+            "expired_at": "2034-04-01T10:00:00Z"
         }
     ] 
 }

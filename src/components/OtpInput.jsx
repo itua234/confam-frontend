@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useOTP } from '../hooks/useOTP'; 
 import { useResendTimer } from '../hooks/useResendTimer';
+import ButtonWithLoader from './ButtonWithLoader';
 
 export const OtpInput = ({ 
   phoneNumber,
@@ -19,7 +20,8 @@ export const OtpInput = ({
         resetTimer
     } = useResendTimer(120);
     const [isResending, setIsResending] = useState(false); // New state to manage loading for resend
-    
+    const [isLoading, setIsLoading] = useState(false); // State to manage loading for the continue button
+
     const handleResendOTP = async () => {
         setIsResending(true); // Set loading state to true
         try{
@@ -87,6 +89,15 @@ export const OtpInput = ({
                         </span>
                     </p>
                 </div>
+
+            
+                <ButtonWithLoader
+                    onClick={() => setIsLoading(true)} // Set loading state when button is clicked
+                    isLoading={isLoading} // Pass the isLoading state
+                    className="mt-auto" // Add any specific classes for this button
+                >
+                    Continue
+                </ButtonWithLoader>
 
                 <button 
                 onClick={onContinue} 
