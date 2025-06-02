@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import upload from './assets/icons/cloud-upload.svg'
+import caret_right from './assets/icons/caret-right.svg'
 import loader from './assets/loader.gif'
 import eye from './assets/icons/eye-off.svg'
 import info from './assets/icons/info.svg'
@@ -26,18 +26,9 @@ import { PhoneInputStep } from './components/PhoneInputStep';
 import { OtpInput } from './components/OtpInput';
 import AccordionTriggerContent from './components/ui/accordion-trigger-content';
 import apiClient from './api/client';
+import { SendOtpBottomSheet } from './components/SendOtpBottomSheet';
+import { VerifyOtpBottomSheet } from './components/VerifyOtpBottomSheet'; 
 
-const HelpSupportBottomSheet = ({ onClose }) => (
-  <div className="bg-white p-6 shadow-lg z-[1001] rounded-[12px] animate-slide-up">
-    <div className="flex justify-between items-center mb-4">
-      <h3 className="text-xl font-semibold">Help & Support</h3>
-      <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl font-bold">x</button>
-    </div>
-    <p>Get help with your queries here.</p>
-    {/* Add contact info, FAQs, etc. */}
-    <div className="mt-4 text-sm text-gray-600">Contact us at support@example.com</div>
-  </div>
-);
 
 // --- Error Section Component (New) ---
 const ErrorSection = ({ message, onRetry }) => (
@@ -58,7 +49,8 @@ const ErrorSection = ({ message, onRetry }) => (
 
 const Welcome = ({ onContinue }) => {
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-1 flex-col justify-between pb-[50px]">
+
       <div className="text-center">
         <div className="flex justify-center mb-[10px]">
           <img src={eye} alt="" className="feature-icon" />
@@ -88,12 +80,14 @@ const Welcome = ({ onContinue }) => {
         </div>
       </div>
 
-      <div className="footer-text m-[10px]">
-        By clicking 'Continue' you agree to <a href="#">Allow's End-user Policy</a>.<br />
+      <div className="">
+        <div className="footer-text m-[10px]">
+          By clicking 'Continue' you agree to <a href="#">Allow's End-user Policy</a>.<br />
+        </div>
+        <button onClick={onContinue} className="primary-button">
+          Continue
+        </button>
       </div>
-      <button onClick={onContinue} className="primary-button">
-        Continue
-      </button>
     </div>
   );
 }
@@ -264,7 +258,19 @@ function App() {
   const [isAppLoading, setIsAppLoading] = useState(true); // To show loading state for the whole app
   const [kycLevel, setKycLevel] = useState('tier_1'); // To store KYC tier if needed
   const [bankIsRequested, setBankIsRequested] = useState(false);
-  
+  const [email, setEmail] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [otpMethod, setOtpMethod] = useState(''); // e.g., 'sms', 'email', 'whatsapp'
+  const {
+    otp,
+    inputRefs,
+    handleOTPInputChange,
+    handleKeyDown,
+    isComplete,
+    focusedInput,
+    setFocusedInput
+  } = useOTP({ length: 6, currentStep });
+
   // Simulate fetching initial data based on kyc_token
   useEffect(() => {
     const fetchRequestData = async () => {
@@ -276,6 +282,8 @@ function App() {
           },
         });
         //console.log('App config:', response.data);
+        setEmail(response.data.results.customer.email);
+        setPhoneNumber(response.data.results.customer.phone);
         setKycLevel(response.data.results.kyc_level);
         setBankIsRequested(response.data.results.bank_accounts_requested);
       } catch (error) {
@@ -293,19 +301,7 @@ function App() {
   const [user, setUser] = useState(userData);
   const [documents, setDocuments] = useState(user.verification_documents || []);
   const [uploadedFiles, setUploadedFiles] = useState({});
-
-
-  const [phoneNumber, setPhoneNumber] = useState('8114800769');
-  const [otpMethod, setOtpMethod] = useState(''); // e.g., 'sms', 'email', 'whatsapp'
-  const {
-    otp,
-    inputRefs,
-    handleOTPInputChange,
-    handleKeyDown,
-    isComplete,
-    focusedInput,
-    setFocusedInput
-  } = useOTP({ length: 6, currentStep });
+  
 
 
   // const [addressLine1, setAddressLine1] = useState('');
@@ -776,7 +772,7 @@ function App() {
 
   return (
     <>
-      <div className="modal-overlay inset-0 z-[1000]">
+      <div className="modal-overlay z-[1000]">
         <div className="!relative modal-content bg-white rounded-3 z-[1001]">
           <div className="header-bar">
             <div><img src="" alt="Allow" className="" /></div>
@@ -790,15 +786,32 @@ function App() {
 
           {activeBottomSheet && ( // Render an overlay behind the active bottom sheet
             <div
-              className="h-full rounded-[12px] w-full absolute top-0 left-0 bg-opacity-80 bg-gray-900" // Z-index higher than modal, lower than sheet
+              className="h-full rounded-[12px] w-full absolute top-0 left-0 bg-black/10 backdrop-blur-sm" // Z-index higher than modal, lower than sheet
               onClick={handleCloseBottomSheet} // Click overlay to close sheet
             >
               <div className="bg-white min-h-[100px] h-auto w-full absolute bottom-0 rounded-[12px]">
+                <div className=" flex justify-center mt-[20px]">
+                  <span className="h-[5px] w-[50px] bg-gray-100 rounded-[5px]"></span>
+                </div>
                 {activeBottomSheet === 'helpSupport' && (
-                  <HelpSupportBottomSheet onClose={handleCloseBottomSheet} />
+                  <VerifyOtpBottomSheet
+                    phoneNumber={phoneNumber}
+                    otp={otp}
+                    inputRefs={inputRefs}
+                    focusedInput={focusedInput}
+                    setFocusedInput={setFocusedInput}
+                    handleOTPInputChange={handleOTPInputChange}
+                    handleKeyDown={handleKeyDown}
+                    onContinue={nextStep}
+                    otpMethod={otpMethod}
+                  />
                 )}
                 {activeBottomSheet === 'productDetails' && (
-                  <HelpSupportBottomSheet onClose={handleCloseBottomSheet} />
+                  <SendOtpBottomSheet 
+                    email={email}
+                    phoneNumber={phoneNumber}
+                    onClose={handleCloseBottomSheet} 
+                  />
                 )}
               </div>
             </div>

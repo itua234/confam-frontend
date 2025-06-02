@@ -72,27 +72,37 @@ h1,.h1,h2,.h2,h3,.h3,h4,.h4,h5,.h5,h6,.h6{
     padding: 0 10px;
 }
 .modal-overlay {
-    position: fixed;
+    /* position: fixed;
     top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
+    left: 0; */
+    /* right: 0;
+    bottom: 0; */
+    /* background-color: rgba(0, 0, 0, 0.5); */
+    background-color: #f1f1f1;
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 1000;
-    padding: 0 20px;
-    overflow: auto
+    padding: 30px 20px !important;
+    overflow: auto;
+    height: auto !important
 }
 .modal-content {
     background: white;
     border-radius: 12px;
     width: 400px;
     position: relative;
-    height: 550px;
+    /* height: 550px; */
+    height: calc(100vh + 40px) !important;
     /* overflow-y: auto; */
-    padding: 0 15px !important;
+    padding: 0 18px !important;
+    box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
+    /* Explanation:
+       0px (offset-x): No horizontal offset
+       4px (offset-y): Shadow extends 4px downwards
+       15px (blur-radius): A significant blur makes it soft
+       rgba(0, 0, 0, 0.1): Black color with 10% opacity (very light)
+    */
 }
 .scroll-container {
     /* max-height: 100%; */
@@ -133,6 +143,10 @@ h1,.h1,h2,.h2,h3,.h3,h4,.h4,h5,.h5,h6,.h6{
 }
 .animate-slide-up {
     animation: slide-up 0.3s ease-out forwards;
+}
+.blur-overlay {
+  backdrop-filter: blur(5px); /* Adjust the pixel value for desired blur strength */
+  -webkit-backdrop-filter: blur(5px); /* For Safari support */
 }
 
 /* .title {
