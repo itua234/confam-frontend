@@ -92,19 +92,13 @@ export const OtpInput = ({
 
             
                 <ButtonWithLoader
-                    onClick={() => setIsLoading(true)} // Set loading state when button is clicked
-                    isLoading={isLoading} // Pass the isLoading state
-                    className="mt-auto" // Add any specific classes for this button
+                    onClick={onContinue}
+                    disabled={!otp.every(digit => digit !== '')}
+                    isLoading={isLoading} 
+                    className="mt-auto" 
                 >
-                    Continue
+                    Verifyy OTP
                 </ButtonWithLoader>
-
-                <button 
-                onClick={onContinue} 
-                disabled={!otp.every(digit => digit !== '')} // Disable if any input is empty
-                className="primary-button mt-auto w-full disabled:opacity-50 disabled:bg-gray-400 disabled:cursor-not-allowed mt-auto w-full">
-                    Verify OTP
-                </button>
             </div>
         </div>
     )

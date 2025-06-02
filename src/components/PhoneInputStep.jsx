@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { Lock, Landmark, User, ChevronUp } from 'lucide-react';
 import { Calendar as CalendarIcon } from "lucide-react"
+import ButtonWithLoader from './ButtonWithLoader';
 
 export const PhoneInputStep = ({ 
   phoneNumber,
@@ -25,10 +26,17 @@ export const PhoneInputStep = ({
   otpMethod,
   setOtpMethod
 }) => {
+    const [isLoading, setIsLoading] = useState(false); // State to manage loading for the continue button
     const [date, setDate] = useState(undefined);
     const [selectedDay, setSelectedDay] = useState('');
     const [selectedMonth, setSelectedMonth] = useState('');
     const [selectedYear, setSelectedYear] = useState('');
+    const canSubmit =
+    phoneNumber.length === 10 && // Assuming phone number must be exactly 10 digits
+    !!selectedDay &&             // Check if selectedDay is not an empty string
+    !!selectedMonth &&           // Check if selectedMonth is not an empty string
+    !!selectedYear &&            // Check if selectedYear is not an empty string
+    !!otpMethod;  
 
     // 3. Generate Years (e.g., from 1900 to the current year)
     const currentYear = new Date().getFullYear();
@@ -82,6 +90,27 @@ export const PhoneInputStep = ({
         { value: '11', label: 'November' },
         { value: '12', label: 'December' },
     ];
+
+    const sendOtp = () => {
+        if (!phoneNumber || phoneNumber.length < 10) {
+            alert('Please enter a valid phone number.');
+            return;
+        }
+        if (!selectedDay || !selectedMonth || !selectedYear) {
+            alert('Please select a valid date.');
+            return;
+        }
+        setIsLoading(true);
+        // Simulate API call
+        setTimeout(() => {
+            setIsLoading(false);
+            onContinue({
+                phoneNumber,
+                dateOfBirth: `${selectedYear}-${selectedMonth}-${selectedDay}`,
+                otpMethod
+            });
+        }, 2000); // Simulate a 2-second API call delay
+    }
   
     return (
         <div className="h-full flex flex-col">
@@ -93,14 +122,20 @@ export const PhoneInputStep = ({
                     <label htmlFor="phone" className="block text-[18px] font-medium">
                         Phone Number
                     </label>
-                    <input
-                        type="tel"
-                        className="w-full px-[20px] py-[14px] border bg-transparent border-[#E5E5E5] focus:outline-none"
-                        id="phone"
-                        placeholder="Enter phone number"
-                        value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value)}
-                    />
+                    <div className="flex ">
+                        <div className="flex items-center justify-center w-[80px] border-r border-[#E5E5E5] text-sm bg-gray-50 text-gray-700">
+                            <span>+234</span>
+                        </div>
+                        <input
+                            type="tel"
+                            className="w-full px-[20px] py-[14px] border bg-transparent border-[#E5E5E5] focus:outline-none"
+                            id="phone"
+                            placeholder="Enter phone number"
+                            value={phoneNumber}
+                            maxLength={10}
+                            onChange={(e) => setPhoneNumber(e.target.value)}
+                        />
+                    </div>
                 </div>
 
                 <div className="flex justify-between gap-[15px]">
@@ -172,11 +207,14 @@ export const PhoneInputStep = ({
                     </div>
                 </div>
 
-                <button 
-                onClick={onContinue} 
-                className="primary-button mt-auto">
+                <ButtonWithLoader
+                    onClick={sendOtp}
+                    disabled={!canSubmit || isLoading}
+                    isLoading={isLoading} 
+                    className="mt-auto" 
+                >
                     Continue
-                </button>
+                </ButtonWithLoader>
             </div>
         </div>
     );

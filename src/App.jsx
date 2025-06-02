@@ -27,6 +27,17 @@ import { OtpInput } from './components/OtpInput';
 import AccordionTriggerContent from './components/ui/accordion-trigger-content';
 import apiClient from './api/client';
 
+const HelpSupportBottomSheet = ({ onClose }) => (
+  <div className="bg-white p-6 shadow-lg z-[1001] rounded-[12px] animate-slide-up">
+    <div className="flex justify-between items-center mb-4">
+      <h3 className="text-xl font-semibold">Help & Support</h3>
+      <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl font-bold">x</button>
+    </div>
+    <p>Get help with your queries here.</p>
+    {/* Add contact info, FAQs, etc. */}
+    <div className="mt-4 text-sm text-gray-600">Contact us at support@example.com</div>
+  </div>
+);
 
 // --- Error Section Component (New) ---
 const ErrorSection = ({ message, onRetry }) => (
@@ -223,6 +234,7 @@ function App() {
   //   setLoading(false);
   //   return;
   // }
+  const [activeBottomSheet, setActiveBottomSheet] = useState(null);
   const [currentStep, setCurrentStep] = useState(0);
   const totalSteps = 5;
   const nextStep = () => {
@@ -237,6 +249,13 @@ function App() {
   };
   const goToStep = (step) => {
     setCurrentStep(step);
+  };
+  const handleOpenBottomSheet = (sheetName) => {
+    setActiveBottomSheet(sheetName);
+  };
+
+  const handleCloseBottomSheet = () => {
+    setActiveBottomSheet(null);
   };
 
   // --- NEW STATE FOR ERROR HANDLING ---
@@ -276,7 +295,7 @@ function App() {
   const [uploadedFiles, setUploadedFiles] = useState({});
 
 
-  const [phoneNumber, setPhoneNumber] = useState('+2348114800769');
+  const [phoneNumber, setPhoneNumber] = useState('8114800769');
   const [otpMethod, setOtpMethod] = useState(''); // e.g., 'sms', 'email', 'whatsapp'
   const {
     otp,
@@ -417,7 +436,7 @@ function App() {
 
     switch(currentStep) {
       case 0:
-        return <Welcome onContinue={nextStep} />;
+        return <Welcome onContinue={() => setActiveBottomSheet("helpSupport")} />;
       case 1: 
       return (
         <PhoneInputStep
@@ -461,33 +480,29 @@ function App() {
                         isComplete={true}     // Set to true if this section is completed, false otherwise
                       />
                     </AccordionTrigger>
-                    <AccordionContent className="accordion-content">
-                      <div className="p-3 space-y-3">
+                    <AccordionContent className="accordion-content bg-white">
+                      <div className="">
                         {/* Name */}
-                        <div className="py-2 border-b border-gray-100">
-                          <div className="text-sm font-medium">Full Name</div>
-                          <div className="text-xs text-gray-500">{user.firstname} {user.lastname}</div>
+                        <div className="py-[12px] px-[18px] border-b border-gray-200">
+                          <h6 className="text-[12px]">Full name</h6>
+                          <div className="text-[12px] text-gray-500">{user.firstname} {user.lastname}</div>
                         </div>
-                        {/* Email */}
-                        <div className="py-2 border-b border-gray-100">
-                          <div className="text-sm font-medium">Email Address</div>
-                          <div className="text-xs text-gray-500">{user.email}</div>
+                        <div className="py-[12px] px-[18px] border-b border-gray-200">
+                            <h6 className="text-[12px] font-medium">Phone</h6>
+                            <div className="text-[12px] text-gray-500">{user.phone}</div>
+                          </div>
+                        <div className="py-[12px] px-[18px] border-b border-gray-200">
+                          <h6 className="text-[12px] font-medium">Email </h6>
+                          <div className="text-[12px] text-gray-500">{user.email}</div>
                         </div>
-                        {/* Phone */}
-                        <div className="py-2 border-b border-gray-100">
-                          <div className="text-sm font-medium">Phone Number</div>
-                          <div className="text-xs text-gray-500">{user.phone}</div>
+                        <div className="py-[12px] px-[18px] border-b border-gray-200">
+                          <h6 className="text-[12px] font-medium">Date of birth</h6>
+                          <div className="text-[12px] text-gray-500">{new Date(user.dob).toLocaleDateString()}</div>
                         </div>
-                        {/* Date of Birth */}
-                        <div className="py-2 border-b border-gray-100">
-                          <div className="text-sm font-medium">Date of Birth</div>
-                          <div className="text-xs text-gray-500">{new Date(user.dob).toLocaleDateString()}</div>
-                        </div>
-                        {/* Address */}
-                        <div className="py-2">
-                          <div className="text-sm font-medium">Address</div>
-                          <div className="text-xs text-gray-500">
-                            {user.address}, {user.city}, {user.state} {user.zip_code}
+                        <div className="py-[12px] px-[18px]">
+                          <h6 className="text-[12px] font-medium">Next of kin</h6>
+                          <div className="text-[12px] text-gray-500">
+                            osemeilu kelvin
                           </div>
                         </div>
                       </div>
@@ -761,8 +776,8 @@ function App() {
 
   return (
     <>
-      <div className="modal-overlay">
-        <div className="relative modal-content bg-white rounded-3">
+      <div className="modal-overlay inset-0 z-[1000]">
+        <div className="!relative modal-content bg-white rounded-3 z-[1001]">
           <div className="header-bar">
             <div><img src="" alt="Allow" className="" /></div>
             <div><button className="" type="button">x</button></div>
@@ -772,6 +787,23 @@ function App() {
               {renderStepContent()}
             </div>
           </div>
+
+          {activeBottomSheet && ( // Render an overlay behind the active bottom sheet
+            <div
+              className="h-full rounded-[12px] w-full absolute top-0 left-0 bg-opacity-80 bg-gray-900" // Z-index higher than modal, lower than sheet
+              onClick={handleCloseBottomSheet} // Click overlay to close sheet
+            >
+              <div className="bg-white min-h-[100px] h-auto w-full absolute bottom-0 rounded-[12px]">
+                {activeBottomSheet === 'helpSupport' && (
+                  <HelpSupportBottomSheet onClose={handleCloseBottomSheet} />
+                )}
+                {activeBottomSheet === 'productDetails' && (
+                  <HelpSupportBottomSheet onClose={handleCloseBottomSheet} />
+                )}
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
     </>
