@@ -447,9 +447,7 @@ function App() {
         <PhoneInputStep
           phoneNumber={phoneNumber}
           setPhoneNumber={setPhoneNumber}
-          onContinue={nextStep}
-          otpMethod={otpMethod}
-          setOtpMethod={setOtpMethod}
+          onContinue={() => setActiveBottomSheet("send-otp")}
         />
       )
     case 2: 

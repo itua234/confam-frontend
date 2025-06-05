@@ -9,17 +9,21 @@ export const SendOtpBottomSheet = ({
   onFinish
 }) => {
     const [sendingMethod, setSendingMethod] = useState(null);
+    
     const handleSendOTP = async (method) => {
         setSendingMethod(method); 
         try {
-            // --- Simulate an API call to send OTP ---
-            await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate a 2-second delay
+            await new Promise(resolve => setTimeout(resolve, 2000));
             console.log(`OTP sent via ${method} to ${method === 'sms' ? phoneNumber : email}`);
-            // --- After successful API call ---
-            //alert(`New OTP sent via ${method === 'sms' ? 'SMS' : 'Email'}!`); // Provide user feedback
+            const response = await client.get(`/allow/${kyc_token}`, {
+                headers: {
+                    Accept: 'application/json',
+                    Authorization: `Bearer ${kyc_token}`,
+                }
+            });
             onFinish();
         } catch (error) {
-            console.error(`Error sending OTP via ${method}:`, error);
+            console.log(`Error sending OTP via ${method}:`, error);
             alert(`Failed to send OTP via ${method}. Please try again.`); // User feedback for error
         } finally {
             setSendingMethod(null); // Reset the sending method state

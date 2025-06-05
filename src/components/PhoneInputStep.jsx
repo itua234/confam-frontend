@@ -23,9 +23,7 @@ import useDatePicker from '../hooks/useDatePicker'; // Custom hook for date pick
 export const PhoneInputStep = ({ 
   phoneNumber,
   setPhoneNumber,
-  onContinue,
-  otpMethod,
-  setOtpMethod
+  onContinue
 }) => {
     const [isLoading, setIsLoading] = useState(false); // State to manage loading for the continue button
     const {
@@ -41,11 +39,10 @@ export const PhoneInputStep = ({
     } = useDatePicker();
 
     const canSubmit =
-    (phoneNumber && phoneNumber.length === 10) && // Assuming phone number must be exactly 10 digits
-    !!selectedDay &&             // Check if selectedDay is not an empty string
-    !!selectedMonth &&           // Check if selectedMonth is not an empty string
-    !!selectedYear &&            // Check if selectedYear is not an empty string
-    !!otpMethod;  
+    (phoneNumber && phoneNumber.length === 10) && 
+    !!selectedDay &&            
+    !!selectedMonth &&          
+    !!selectedYear
 
     const sendOtp = () => {
         if (!phoneNumber) {
@@ -60,11 +57,11 @@ export const PhoneInputStep = ({
         // Simulate API call
         setTimeout(() => {
             setIsLoading(false);
-            onContinue({
+            console.log("payload:",{
                 phoneNumber,
                 dateOfBirth: `${selectedYear}-${selectedMonth}-${selectedDay}`,
-                otpMethod
             });
+            onContinue();
         }, 2000); // Simulate a 2-second API call delay
     }
   
@@ -133,34 +130,6 @@ export const PhoneInputStep = ({
                             ))}
                         </SelectContent>
                     </Select>
-                </div>
-
-                <div className="mt-4">
-                    <label className="block text-[18px] font-medium mb-2">Preferred OTP Method</label>
-                    <div className="flex items-center gap-4 ">
-                        <label className="flex items-center cursor-pointer">
-                        <input
-                            type="radio"
-                            name="otpMethod"
-                            value="sms"
-                            checked={otpMethod === 'sms'}
-                            onChange={(e) => setOtpMethod(e.target.value)}
-                            className="mr-2 cursor-pointer"
-                        />
-                        SMS
-                        </label>
-                        <label className="flex items-center  cursor-pointer">
-                        <input
-                            type="radio"
-                            name="otpMethod"
-                            value="whatsapp"
-                            checked={otpMethod === 'whatsapp'}
-                            onChange={(e) => setOtpMethod(e.target.value)}
-                            className="mr-2 cursor-pointer"
-                        />
-                        Whatsapp
-                        </label>
-                    </div>
                 </div>
 
                 <ButtonWithLoader
