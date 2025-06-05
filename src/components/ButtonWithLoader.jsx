@@ -2,6 +2,7 @@
 import React from 'react';
 import { cn } from "@/lib/utils"; // Assuming you have this utility for conditional class names
 import loader from '../assets/loader.gif'
+import spinner from '../assets/spinner.gif'
 
 const ButtonWithLoader = ({
   children,
@@ -48,7 +49,10 @@ const ButtonWithLoader = ({
                 //     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                 // ></path>
                 // </svg>
-                <img src={loader} alt="Loading..." className="w-7 h-7" />
+                <>
+                <img src={loader} alt="Loading..." className="w-10 h-10" />
+                {/* <img src={spinner} alt="Loading..." className="spinner" /> */}
+                </>
             ) : (
                 children // Show button text/content when not loading
             )}

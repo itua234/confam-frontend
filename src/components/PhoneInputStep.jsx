@@ -18,6 +18,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { Lock, Landmark, User, ChevronUp } from 'lucide-react';
 import { Calendar as CalendarIcon } from "lucide-react"
 import ButtonWithLoader from './ButtonWithLoader';
+import useDatePicker from '../hooks/useDatePicker'; // Custom hook for date picker logic
 
 export const PhoneInputStep = ({ 
   phoneNumber,
@@ -27,72 +28,27 @@ export const PhoneInputStep = ({
   setOtpMethod
 }) => {
     const [isLoading, setIsLoading] = useState(false); // State to manage loading for the continue button
-    const [date, setDate] = useState(undefined);
-    const [selectedDay, setSelectedDay] = useState('');
-    const [selectedMonth, setSelectedMonth] = useState('');
-    const [selectedYear, setSelectedYear] = useState('');
+    const {
+        selectedDay,
+        setSelectedDay,
+        selectedMonth,
+        setSelectedMonth,
+        selectedYear,
+        setSelectedYear,
+        daysInCurrentMonth,
+        months,
+        years,
+    } = useDatePicker();
+
     const canSubmit =
-    phoneNumber.length === 10 && // Assuming phone number must be exactly 10 digits
+    (phoneNumber && phoneNumber.length === 10) && // Assuming phone number must be exactly 10 digits
     !!selectedDay &&             // Check if selectedDay is not an empty string
     !!selectedMonth &&           // Check if selectedMonth is not an empty string
     !!selectedYear &&            // Check if selectedYear is not an empty string
     !!otpMethod;  
 
-    // 3. Generate Years (e.g., from 1900 to the current year)
-    const currentYear = new Date().getFullYear();
-    const startYear = 1900; // You can adjust this as needed
-    const years = Array.from({ length: currentYear - startYear + 1 }, (_, i) => currentYear - i);
-
-    // New state to hold the dynamically generated days for the month
-    const [daysInCurrentMonth, setDaysInCurrentMonth] = useState(
-        Array.from({ length: 31 }, (_, i) => i + 1)
-    );
-    const getDaysInMonth = (month, year) => {
-        if (!month || !year) {
-            return [];
-        }
-        const monthIndex = parseInt(month, 10) - 1;
-        const fullYear = parseInt(year, 10);
-        const numDays = new Date(fullYear, monthIndex + 1, 0).getDate();
-        return Array.from({ length: numDays }, (_, i) => i + 1);
-    };
-    useEffect(() => {
-        let targetYearForCalculation = selectedYear;
-        if (selectedMonth && !selectedYear) {
-            targetYearForCalculation = String(currentYear); // Convert to string to match selectedYear type
-        }
-        if (selectedMonth && targetYearForCalculation) {
-            const newDays = getDaysInMonth(selectedMonth, targetYearForCalculation);
-            setDaysInCurrentMonth(newDays);
-            // Reset selected day if it's no longer valid for the new month/year
-            if (selectedDay && !newDays.includes(parseInt(selectedDay, 10))) {
-                setSelectedDay('');
-            }
-        } else {
-            setDaysInCurrentMonth(Array.from({ length: 31 }, (_, i) => i + 1));
-            // Also, clear the selected day if month/year inputs are not complete.
-            setSelectedDay('');
-        }
-    }, [selectedMonth, selectedYear]); 
-  
-    // 2. Generate Months (using numbers for value, names for display)
-    const months = [
-        { value: '1', label: 'January' },
-        { value: '2', label: 'February' },
-        { value: '3', label: 'March' },
-        { value: '4', label: 'April' },
-        { value: '5', label: 'May' },
-        { value: '6', label: 'June' },
-        { value: '7', label: 'July' },
-        { value: '8', label: 'August' },
-        { value: '9', label: 'September' },
-        { value: '10', label: 'October' },
-        { value: '11', label: 'November' },
-        { value: '12', label: 'December' },
-    ];
-
     const sendOtp = () => {
-        if (!phoneNumber || phoneNumber.length < 10) {
+        if (!phoneNumber) {
             alert('Please enter a valid phone number.');
             return;
         }

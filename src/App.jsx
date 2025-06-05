@@ -28,7 +28,7 @@ import AccordionTriggerContent from './components/ui/accordion-trigger-content';
 import apiClient from './api/client';
 import { SendOtpBottomSheet } from './components/SendOtpBottomSheet';
 import { VerifyOtpBottomSheet } from './components/VerifyOtpBottomSheet'; 
-
+import { AccessTypeSheet } from './components/AccessTypeSheet';
 
 // --- Error Section Component (New) ---
 const ErrorSection = ({ message, onRetry }) => (
@@ -256,11 +256,13 @@ function App() {
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [isAppLoading, setIsAppLoading] = useState(true); // To show loading state for the whole app
+  
   const [kycLevel, setKycLevel] = useState('tier_1'); // To store KYC tier if needed
   const [bankIsRequested, setBankIsRequested] = useState(false);
   const [email, setEmail] = useState("");
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [otpMethod, setOtpMethod] = useState(''); // e.g., 'sms', 'email', 'whatsapp'
+  const [phone_verified_at, setPhoneVerifiedAt] = useState(false); // To track if phone is verified
+  const [otpMethod, setOtpMethod] = useState(''); // e.g., 'sms', 'email'
   const {
     otp,
     inputRefs,
@@ -284,6 +286,7 @@ function App() {
         //console.log('App config:', response.data);
         setEmail(response.data.results.customer.email);
         setPhoneNumber(response.data.results.customer.phone);
+        setPhoneVerifiedAt(response.data.results.customer.phone_verified_at);
         setKycLevel(response.data.results.kyc_level);
         setBankIsRequested(response.data.results.bank_accounts_requested);
       } catch (error) {
@@ -315,7 +318,7 @@ function App() {
   // const [accountName, setAccountName] = useState('');
   const [bankAccounts, setBankAccounts] = useState([]);
 
-  const [accessType, setAccessType] = useState(''); // e.g., 'full', 'limited'
+  const [accessType, setAccessType] = useState(''); // e.g., 'continuous', 'one-time'
 
   // New states for webcam and facial recognition
   const webcamRef = useRef(null); // Ref to access the webcam component's methods
@@ -403,7 +406,7 @@ function App() {
     console.log(`Document ${docId} verif`);
   }
 
-   // Handle form submission
+  // Handle form submission
   const handleSubmit = (e) => {
     e.preventDefault();
     // console.log('Form submitted with:', {
@@ -432,7 +435,13 @@ function App() {
 
     switch(currentStep) {
       case 0:
-        return <Welcome onContinue={() => setActiveBottomSheet("helpSupport")} />;
+        return <Welcome onContinue={() => {
+          if(!phoneNumber || !phone_verified_at){
+            goToStep(1);
+          }else{
+            setActiveBottomSheet("send-otp");
+          }
+        }} />;
       case 1: 
       return (
         <PhoneInputStep
@@ -443,21 +452,7 @@ function App() {
           setOtpMethod={setOtpMethod}
         />
       )
-    case 2:
-      return (
-        <OtpInput
-          phoneNumber={phoneNumber}
-          otp={otp}
-          inputRefs={inputRefs}
-          focusedInput={focusedInput}
-          setFocusedInput={setFocusedInput}
-          handleOTPInputChange={handleOTPInputChange}
-          handleKeyDown={handleKeyDown}
-          onContinue={nextStep}
-          otpMethod={otpMethod}
-        />
-      )
-    case 3: 
+    case 2: 
       return (
         <>
           <div className="h-full flex flex-col">
@@ -648,7 +643,7 @@ function App() {
           </div>
         </>
       )
-    case 4:
+    case 3:
       return (
         <div className="h-full flex flex-col">
           {/* <h3 className="mb-4">Choose Access Type & Facial Recognition</h3> */}
@@ -763,7 +758,7 @@ function App() {
           
         </div>
       )
-    case 5: 
+    case 4: 
       return <Success />;
       default:
         return null;
@@ -793,7 +788,7 @@ function App() {
                 <div className=" flex justify-center mt-[20px]">
                   <span className="h-[5px] w-[50px] bg-gray-100 rounded-[5px]"></span>
                 </div>
-                {activeBottomSheet === 'helpSupport' && (
+                {activeBottomSheet === 'verify-otp' && (
                   <VerifyOtpBottomSheet
                     phoneNumber={phoneNumber}
                     otp={otp}
@@ -806,11 +801,20 @@ function App() {
                     otpMethod={otpMethod}
                   />
                 )}
-                {activeBottomSheet === 'productDetails' && (
+                {activeBottomSheet === 'send-otp' && (
                   <SendOtpBottomSheet 
                     email={email}
                     phoneNumber={phoneNumber}
+                    onFinish={() => setActiveBottomSheet("verify-otp")}
+                    // onClose={handleCloseBottomSheet} 
+                  />
+                )}
+                {activeBottomSheet === 'access-type' && (
+                  <AccessTypeSheet 
+                    accessType={accessType}
+                    setAccessType={setAccessType}
                     onClose={handleCloseBottomSheet} 
+                    goToStep={goToStep}
                   />
                 )}
               </div>
