@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { maskEmail } from '../lib/utils'; 
 import { Smartphone, Mail } from 'lucide-react';
 import loader from '../assets/loader.gif'
+import { sendOtp } from "../api/request";
 
 export const SendOtpBottomSheet = ({ 
   email,
@@ -15,18 +16,13 @@ export const SendOtpBottomSheet = ({
         try {
             await new Promise(resolve => setTimeout(resolve, 2000));
             console.log(`OTP sent via ${method} to ${method === 'sms' ? phoneNumber : email}`);
-            const response = await client.get(`/allow/${kyc_token}`, {
-                headers: {
-                    Accept: 'application/json',
-                    Authorization: `Bearer ${kyc_token}`,
-                }
-            });
+            
             onFinish();
         } catch (error) {
             console.log(`Error sending OTP via ${method}:`, error);
             alert(`Failed to send OTP via ${method}. Please try again.`); // User feedback for error
         } finally {
-            setSendingMethod(null); // Reset the sending method state
+            setSendingMethod(null); 
         }
     };
     const isSending = sendingMethod !== null;
@@ -60,7 +56,6 @@ export const SendOtpBottomSheet = ({
                             width="20" height="20" viewBox="0 0 15 15"
                             className="group-hover:text-blue-500 transition-colors duration-200 ease-in-out"
                         >
-                            {/* Corrected attribute names for JSX (fill-rule -> fillRule, clip-rule -> clipRule) */}
                             <path fill="currentColor" fillRule="evenodd" d="M6.182 4.182a.45.45 0 0 1 .636 0l3 3a.45.45 0 0 1 0 .636l-3 3a.45.45 0 1 1-.636-.636L8.864 7.5L6.182 4.818a.45.45 0 0 1 0-.636" clipRule="evenodd"/>
                         </svg>
                     )}
@@ -87,18 +82,9 @@ export const SendOtpBottomSheet = ({
                                 width="20" height="20" viewBox="0 0 15 15"
                                 className="group-hover:text-blue-500 transition-colors duration-200 ease-in-out"
                             >
-                                {/* Corrected attribute names for JSX */}
                                 <path fill="currentColor" fillRule="evenodd" d="M6.182 4.182a.45.45 0 0 1 .636 0l3 3a.45.45 0 0 1 0 .636l-3 3a.45.45 0 1 1-.636-.636L8.864 7.5L6.182 4.818a.45.45 0 0 1 0-.636" clipRule="evenodd"/>
                             </svg>
                         )}
-                        {/* <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="20" height="20" viewBox="0 0 15 15" 
-                            className="group-hover:text-blue-500 transition-colors duration-200 ease-in-out"
-                        >
-                            <path fill="currentColor" fill-rule="evenodd" d="M6.182 4.182a.45.45 0 0 1 .636 0l3 3a.45.45 0 0 1 0 .636l-3 3a.45.45 0 1 1-.636-.636L8.864 7.5L6.182 4.818a.45.45 0 0 1 0-.636" clip-rule="evenodd"/>
-                        </svg>
-                        <img src={loader} alt="Loading..." className="w-[20px] h-[20px]" /> */}
                     </div>
                 </button>
             </div>

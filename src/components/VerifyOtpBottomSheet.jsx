@@ -20,32 +20,42 @@ export const VerifyOtpBottomSheet = ({
         formattedTime,
         resetTimer
     } = useResendTimer(120);
-    const [isResending, setIsResending] = useState(false); // New state to manage loading for resend
-    const [isLoading, setIsLoading] = useState(false); // State to manage loading for the continue button
+    const [isResending, setIsResending] = useState(false); 
+    const [isLoading, setIsLoading] = useState(false); 
 
     const handleResendOTP = async () => {
-        setIsResending(true); // Set loading state to true
+        setIsResending(true); 
         try{
-        // For now, simulate a successful API call with a delay
-        await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate 2-second API delay
+        await new Promise(resolve => setTimeout(resolve, 2000)); 
         //console.log(`OTP resent to ${phoneNumber} via ${otpMethod}.`);
-        alert('New OTP sent!'); // User feedback
-        resetTimer(); // Reset the timer ONLY after a successful API call
-        // --- End Simulate API Request ---
+        alert('New OTP sent!'); 
+        resetTimer();
         }catch (error) {
             console.error('Error resending OTP:', error);
-            alert('Failed to resend OTP. Please try again.'); // User feedback for error
+            alert('Failed to resend OTP. Please try again.'); 
         } finally {
-            setIsResending(false); // Reset loading state
+            setIsResending(false); 
         }
     };
+
+    const verifyOtp = async () => {
+        setIsLoading(true);
+        try{
+            await new Promise(resolve => setTimeout(resolve, 2000)); 
+            onContinue();
+        }catch (error) {
+            alert('Failed to resend OTP. Please try again.'); 
+        } finally {
+            setIsLoading(false); 
+        }
+    }
     
     return (
         <div 
         onClick={(e) => e.stopPropagation()}
         className="bg-white px-6 py-[30px] shadow-lg z-[1001] rounded-[12px] animate-slide-up">
             <div className="flex flex-col items-center">
-                <div class="mb-[20px]">
+                <div className="mb-[20px]">
                     <svg 
                     xmlns="http://www.w3.org/2000/svg" 
                     width="30" height="30" 
@@ -108,7 +118,7 @@ export const VerifyOtpBottomSheet = ({
 
                 
                     <ButtonWithLoader
-                        onClick={onContinue}
+                        onClick={verifyOtp}
                         disabled={!otp.every(digit => digit !== '')}
                         isLoading={isLoading} 
                         className="" 

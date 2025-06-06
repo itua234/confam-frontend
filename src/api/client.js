@@ -19,7 +19,7 @@ const cancelTokenSource = axios.CancelToken.source();
 // In a standard React Native setup, you might use react-native-dotenv or similar.
 const appToken = import.meta.env.REACT_APP_TOKEN;
 
-const createApiClient = (baseURL = "http://localhost:8080/api/v1/") => {
+const createApiClient = (baseURL = "http://localhost:8080/api/v1") => {
     const client = axios.create({
         baseURL: baseURL,
         timeout: 10000, // 10 seconds

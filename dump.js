@@ -1,80 +1,33 @@
-import React, { useState, useRef, useCallback } from 'react';
-// import reactLogo from './assets/react.svg'
-import upload from './assets/icons/cloud-upload.svg'
-import eye from './assets/icons/eye-off.svg'
-import shield from './assets/icons/shield-check.svg'
-import check_circle from './assets/icons/shield-check.svg'
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import { useParams } from 'react-router-dom';
+import loader from './assets/loader.gif'
+import info from './assets/icons/info.svg'
 import pencil from './assets/icons/pencil.svg'
 import cloud_upload from "./assets/icons/cloud-upload.svg"
-import { Lock, Landmark, User, ChevronUp } from 'lucide-react';
-import { Calendar as CalendarIcon } from "lucide-react"
-// import { ConnectButton } from '@rainbow-me/rainbowkit';
-// import { useAccount } from 'wagmi'
-// import { QueryClient } from "@tanstack/react-query";
+import { Lock, Landmark, User, ArrowUp, Plus } from 'lucide-react';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/components/ui/accordion"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
-import { format } from "date-fns"
-import { cn } from "@/lib/utils"
+} from "@/components/ui/accordion";
 import Webcam from 'react-webcam';
 import userData from "../user.json";
-
-const Welcome = ({ onContinue }) => {
-  return (
-    <div className="flex flex-col">
-      <div className="text-center">
-        <div className="flex justify-center mb-[10px]">
-          <img src={eye} alt="" className="feature-icon" />
-        </div>
-        <h3>To continue, we need to verify your identity</h3>
-      </div>
-
-      <div className="my-4 rounded-2 border" style={{ padding: "20px 25px" }}>
-        <div className="flex items-center mb-3">
-          <img src={eye} alt="" className="feature-icon" />
-          <div className="feature-text">
-            <b>How Confam verifies your identity.</b> Confam checks the data you provide against approved databases.
-          </div>
-        </div>
-
-        <div className="flex items-center mb-3">
-          <img src={shield} alt="" className="feature-icon" />
-          <div className="feature-text">
-            <b>Fast and secure.</b> Your data is encrypted and will never be made accessible to unauthorized third parties.
-          </div>
-        </div>
-
-        <div className="flex items-center">
-          <div className="feature-text">
-            Allow is authorized and regulated by the<b> National Data Privacy Board (NDPB).</b>
-          </div>
-        </div>
-      </div>
-
-      <div className="footer-text m-[10px]">
-        By clicking 'Continue' you agree to <a href="#">Allow's End-user Policy</a>.<br />
-      </div>
-      <button onClick={onContinue} className="primary-button">
-        Continue
-      </button>
-    </div>
-  );
-}
+import { useOTP } from './hooks/useOTP'; 
+import { PhoneInputStep } from './components/PhoneInputStep';
+import AccordionTriggerContent from './components/ui/accordion-trigger-content';
+import apiClient from './api/client';
+import { SendOtpBottomSheet } from './components/SendOtpBottomSheet';
+import { VerifyOtpBottomSheet } from './components/VerifyOtpBottomSheet'; 
+import { AccessTypeSheet } from './components/AccessTypeSheet';
+import { Welcome } from "./components/welcome"
+import { Success } from "./components/success"
+import { InvalidLink } from "./components/invalid";
 
 const VerificationDocument = ({ 
   doc, 
   isLast,
-  onToggleVerified, 
+  onToggleShared, 
   onFileUpload
 })  => {
   const getEditAction = (type) => {
@@ -87,6 +40,17 @@ const VerificationDocument = ({
       default: return 'edit-other';
     }
   };
+  const maskText = (text) => {
+    if (!text || text.length <= 7) {
+      // If the text is null, empty, or too short to mask (e.g., less than 7 digits for 3+4 pattern)
+      // return the text as is or handle as an error.
+      return text;
+    }
+    const firstThree = text.substring(0, 3);
+    const lastFour = text.substring(text.length - 4);
+    const stars = '*'.repeat(text.length - 7); // Calculate the number of stars needed
+    return `${firstThree}${stars}${lastFour}`;
+  };
   const showRedAsterisk = doc.type === 'NIN' || doc.type === 'BVN';
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -97,7 +61,7 @@ const VerificationDocument = ({
   };
 
   const handleCheckboxChange = (e) => {
-    //onToggleVerified(doc.id, e.target.checked);
+    onToggleShared(doc.id, e.target.checked);
   };
 
   return (
@@ -115,7 +79,7 @@ const VerificationDocument = ({
         <div className="flex items-center gap-1">
           {doc.verified ? (
             <>
-              <span style={{ fontSize: '14px' }}>{doc.text}</span>
+              <span style={{ fontSize: '14px' }}>{maskText(doc.text)}</span>
               <a
                 className="p-0 cursor-pointer"
                 data-id={doc.id}
@@ -138,9 +102,7 @@ const VerificationDocument = ({
                 type="checkbox"
                 id={`verified-${doc.id}`}
                 name={doc.type.toLowerCase()}
-                checked={doc.verified}
-                // data-doc-id={doc.id}
-                // data-doc-type={doc.type}
+                checked={doc.shared}
                 onChange={handleCheckboxChange}
                 className="sr-only peer"
               />
@@ -148,12 +110,14 @@ const VerificationDocument = ({
             </label>
           </div>
         ) : (
+          doc.type != 'NIN' && doc.type != 'BVN' ? (
           <div>
             <label
               htmlFor={`file-${doc.id}`}
               className="upload-btn flex items-center justify-center"
             >
-              <span>Upload</span>
+              <ArrowUp size={18} />
+              <span className="ml-[8px]">Upload</span>
             </label>
             <input
               type="file"
@@ -163,7 +127,7 @@ const VerificationDocument = ({
               accept=".pdf,.jpg,.jpeg,.png"
               onChange={handleFileChange}
             />
-          </div>
+          </div>) : null
         )}
       </div>
     </div>
@@ -171,27 +135,92 @@ const VerificationDocument = ({
 }
 
 function App() {
-  // const queryClient = new QueryClient();
+  const { kyc_token } = useParams();
+  const client = useMemo(() => apiClient("http://localhost:8080/api/v1/"), []);
+  // if (!kycToken) {
+  //   setError('KYC token missing in URL.');
+  //   setLoading(false);
+  //   return;
+  // }
+  const [hasError, setHasError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isAppLoading, setIsAppLoading] = useState(true); 
+  
   const [user, setUser] = useState(userData);
-  const [uploadedFiles, setUploadedFiles] = useState({});
-  const [date, setDate] = useState(undefined);
-
-  const [phoneNumber, setPhoneNumber] = useState('+2348114800769');
-  const [otpMethod, setOtpMethod] = useState(''); // e.g., 'sms', 'email', 'whatsapp'
-  const [otp, setOtp] = useState(''); // For OTP input if needed
-
-  const [addressLine1, setAddressLine1] = useState('');
-  const [city, setCity] = useState('');
-  const [state, setState] = useState('');
-  const [zipCode, setZipCode] = useState('');
-  const [country, setCountry] = useState('Nigeria');
-
-  const [bankName, setBankName] = useState('');
-  const [accountNumber, setAccountNumber] = useState('');
-  const [accountName, setAccountName] = useState('');
+  const [documents, setDocuments] = useState(user.verification_documents || []);
   const [bankAccounts, setBankAccounts] = useState([]);
+  const [uploadedFiles, setUploadedFiles] = useState({});
+  const [kycLevel, setKycLevel] = useState('tier_1'); 
+  const [bankIsRequested, setBankIsRequested] = useState(false);
+  const [accessType, setAccessType] = useState(''); // e.g., 'continuous', 'one-time'
+  const [activeBottomSheet, setActiveBottomSheet] = useState(null);
+  const [currentStep, setCurrentStep] = useState(0);
+  const totalSteps = 5;
+  const nextStep = () => {
+    if (currentStep < totalSteps) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+  const prevStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+  const goToStep = (step) => {
+    setCurrentStep(step);
+  };
+  const handleOpenBottomSheet = (sheetName) => {
+    setActiveBottomSheet(sheetName);
+  };
+  const handleCloseBottomSheet = () => {
+    setActiveBottomSheet(null);
+  };
 
-  const [accessType, setAccessType] = useState(''); // e.g., 'full', 'limited'
+
+  const [email, setEmail] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [phone_verified_at, setPhoneVerifiedAt] = useState(false); // To track if phone is verified
+  const [otpMethod, setOtpMethod] = useState(''); // e.g., 'sms', 'email'
+  const {
+    otp,
+    inputRefs,
+    handleOTPInputChange,
+    handleKeyDown,
+    isComplete,
+    focusedInput,
+    setFocusedInput
+  } = useOTP({ length: 6, currentStep });
+
+  // Simulate fetching initial data based on kyc_token
+  useEffect(() => {
+    const fetchRequestData = async () => {
+      try {
+        const response = await client.get(`/allow/${kyc_token}`, {
+          headers: {
+            Accept: 'application/json',
+            Authorization: `Bearer ${kyc_token}`,
+          },
+        });
+        //console.log('App config:', response.data);
+        setEmail(response.data.results.customer.email);
+        setPhoneNumber(response.data.results.customer.phone);
+        setPhoneVerifiedAt(response.data.results.customer.phone_verified_at);
+        setKycLevel(response.data.results.kyc_level);
+        setBankIsRequested(response.data.results.bank_accounts_requested);
+      } catch (error) {
+        console.error('Error fetching KYC request:', error);
+        setHasError(true);
+        setErrorMessage(error.message || 'Failed to load KYC request. Please try again.');
+      } finally {
+        setIsAppLoading(false);
+      }
+    };
+    fetchRequestData();
+  }, []); 
+
+  // const [bankName, setBankName] = useState('');
+  // const [accountNumber, setAccountNumber] = useState('');
+  // const [accountName, setAccountName] = useState('');
 
   // New states for webcam and facial recognition
   const webcamRef = useRef(null); // Ref to access the webcam component's methods
@@ -249,22 +278,6 @@ function App() {
 
   const [isLoading, setIsLoading] = useState(false);
   
-  const [currentStep, setCurrentStep] = useState(0);
-  const totalSteps = 5;
-  const nextStep = () => {
-    if (currentStep < totalSteps) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
-  const prevStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-  const goToStep = (step) => {
-    setCurrentStep(step);
-  };
-
   // Handle file upload
   const handleFileUpload = (docId, file) => {
     setUploadedFiles(prev => ({
@@ -284,19 +297,18 @@ function App() {
   };
 
   // Handle checkbox toggle
-  const handleToggleVerified = (docId, isChecked) => {
-    // setUser(prevUser => ({
-    //   ...prevUser,
-    //   verification_documents: prevUser.verification_documents.map(doc =>
-    //     doc.id === docId 
-    //       ? { ...doc, verified: isChecked }
-    //       : doc
-    //   )
-    // }));
+  const handleToggleShare = (docId, isShared) => {
+    setDocuments(prev => 
+      prev.map(doc =>
+        doc.id === docId 
+          ? { ...doc, shared: isShared }
+          : doc
+      )
+    );
     console.log(`Document ${docId} verif`);
   }
 
-   // Handle form submission
+  // Handle form submission
   const handleSubmit = (e) => {
     e.preventDefault();
     // console.log('Form submitted with:', {
@@ -309,167 +321,38 @@ function App() {
   };
 
   const renderStepContent = () => {
+    if (isAppLoading) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full">
+          <img src={loader} alt="Loading..." className="w-7 h-7" />
+        </div>
+      );
+    }
+
+    if (hasError) {
+      return (
+        <InvalidLink message={errorMessage} onRetry={() => setCurrentStep(0)} /> // Reset step to 0 for retry
+      );
+    }
+
     switch(currentStep) {
       case 0:
-        return (
-          <>
-            {/* <div className="flex flex-col">
-              <div className="text-center">
-                <div className="flex justify-center mb-[10px]">
-                  <img src={eye} alt="" className="feature-icon" />
-                </div>
-                <h3>To continue, we need to verify your identity</h3>
-              </div>
-
-              <div className="my-4 rounded-2 border" style={{ padding: "20px 25px" }}>
-                  <div className="flex items-center mb-3">
-                      <img src={eye} alt="" className="feature-icon" />
-                      <div className="feature-text">
-                          <b>How Confam verifies your identity.</b> Confam checks the data you provide againts approved databases.
-                      </div>
-                  </div>
-
-                  <div className="flex items-center mb-3">
-                      <img src={shield} alt="" className="feature-icon" />
-                      <div className="feature-text">
-                          <b>Fast and secure.</b>
-                          Your data is encrypted and will never be made accessible to unauthorized third parties.
-                      </div>
-                  </div>
-
-                  <div className="flex items-center">
-                      <div className="feature-text">
-                          Allow is authorized and regulated by the<b> National Data Privacy Board (NDPB).</b>
-                      </div>
-                  </div>
-              </div>
-
-              <div className="footer-text m-[10px]">
-                By clicking 'Continue' you agree to <a href="#">Allow's End-user Policy</a>.<br />
-              </div>
-              <button 
-              onClick={nextStep}
-              className="primary-button">
-                Continue
-              </button>
-            </div> */}
-            <Welcome onContinue={nextStep} />
-          </>
-        )
+        return <Welcome onContinue={() => {
+          if(!phoneNumber || !phone_verified_at){
+            goToStep(1);
+          }else{
+            setActiveBottomSheet("send-otp");
+          }
+        }} />;
       case 1: 
       return (
-        <>
-          <div className="h-full flex flex-col">
-            <div className="text-center mb-4">
-              <h3>Personal Information</h3>
-            </div>
-            <div className="flex-1 flex flex-col py-[20px]">
-              <div className="mb-3">
-                <label
-                  htmlFor="phone"
-                  className="block text-[18px] font-medium"
-                >
-                  Phone Number
-                </label>
-                <input 
-                  type="tel" 
-                  className="w-full px-[20px] py-[14px] border bg-transparent border-[#E5E5E5] focus:outline-none" 
-                  id="phone" 
-                  placeholder="Enter phone number" 
-                  value={phoneNumber} // Controlled component
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                />
-              </div>
-
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-[240px] justify-start text-left font-normal",
-                      !date && "text-muted-foreground"
-                    )}
-                    type="button"
-                  >
-                    <CalendarIcon />
-                    {date ? format(date, "PPP") : <span>Pick a date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent  className="w-auto p-0 z-[9999]" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={date}
-                    onSelect={setDate}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-
-              <div className="mb-4">
-                <label className="block text-[18px] font-medium mb-2">Preferred OTP Method</label>
-                <div className="flex items-center gap-4">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="otpMethod"
-                      value="sms"
-                      checked={otpMethod === 'sms'}
-                      onChange={(e) => setOtpMethod(e.target.value)}
-                      className="mr-2"
-                    />
-                    SMS
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="otpMethod"
-                      value="whatsapp"
-                      checked={otpMethod === 'whatsapp'}
-                      onChange={(e) => setOtpMethod(e.target.value)}
-                      className="mr-2"
-                    />
-                    Whatsapp
-                  </label>
-                  {/* Add more options like WhatsApp if needed */}
-                </div>
-              </div>
-
-              <button 
-                onClick={nextStep}
-                className="primary-button mt-auto">
-                Continue
-              </button>
-            </div>
-          </div>
-        </>
+        <PhoneInputStep
+          phoneNumber={phoneNumber}
+          setPhoneNumber={setPhoneNumber}
+          onContinue={() => setActiveBottomSheet("send-otp")}
+        />
       )
-    case 2:
-      return (
-        <div className="h-full flex flex-col items-center justify-center">
-          <h3 className="mb-4">Enter OTP</h3>
-          <p className="text-center mb-6">A verification code has been sent to your {otpMethod === 'sms' ? 'phone number' : 'email address'}.</p>
-          <input
-            type="text" // Or 'number' for numeric input, but text is common for OTPs
-            className="w-1/2 px-[20px] py-[14px] border bg-transparent border-[#E5E5E5] text-center text-2xl tracking-[1em] focus:outline-none"
-            maxLength="6" // Assuming a 6-digit OTP
-            value={otp}
-            onChange={(e) => setOtp(e.target.value)}
-            placeholder="______"
-          />
-          <button
-            onClick={nextStep} // Or a dedicated handleOtpSubmit
-            className="primary-button mt-8 w-full"
-          >
-            Verify OTP
-          </button>
-          <button 
-            className="mt-4 text-blue-600 text-sm" 
-            onClick={() => console.log('Resend OTP')}>
-            Resend OTP
-          </button>
-        </div>
-      )
-    case 3: 
+    case 2: 
       return (
         <>
           <div className="h-full flex flex-col">
@@ -481,98 +364,116 @@ function App() {
                 <Accordion type="single" collapsible>
                   <AccordionItem value="item-1" className="accordion-header">
                     <AccordionTrigger className="accordion-trigger">
-                      <div className="w-full flex items-center justify-between">
-                        <div className="flex items-center">
-                            <div className="rounded-full flex items-center justify-center h-[35px] w-[35px] border border-[#bbb]">
-                              <User size={18} />
-                            </div>
-                            <div className="flex flex-col mx-2">
-                              <span className="">Personal Information</span>
-                              <span className="text-[12px]">5 items</span>
-                            </div>
+                      <AccordionTriggerContent
+                        icon={User}           // Pass the User icon component
+                        title="Personal Information"
+                        subtitle={5+ ' items'} // Dynamic subtitle, e.g., number of items
+                        isComplete={true}     // Set to true if this section is completed, false otherwise
+                      />
+                    </AccordionTrigger>
+                    <AccordionContent className="accordion-content bg-white">
+                      <div className="">
+                        {/* Name */}
+                        <div className="py-[12px] px-[18px] border-b border-gray-200">
+                          <h6 className="text-[12px]">Full name</h6>
+                          <div className="text-[12px] text-gray-500">{user.firstname} {user.lastname}</div>
                         </div>
-                        <div className="">
-                          <div className="flex items-center justify-center w-[20px] h-[20px] rounded-full bg-[#222831]">
-                            <svg className="w-4 h-4" fill="none" stroke="white" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
+                        <div className="py-[12px] px-[18px] border-b border-gray-200">
+                            <h6 className="text-[12px] font-medium">Phone</h6>
+                            <div className="text-[12px] text-gray-500">{user.phone}</div>
                           </div>
-                          {/* <img src={cloud_upload} className="" width="18" /> */}
+                        <div className="py-[12px] px-[18px] border-b border-gray-200">
+                          <h6 className="text-[12px] font-medium">Email </h6>
+                          <div className="text-[12px] text-gray-500">{user.email}</div>
+                        </div>
+                        <div className="py-[12px] px-[18px] border-b border-gray-200">
+                          <h6 className="text-[12px] font-medium">Date of birth</h6>
+                          <div className="text-[12px] text-gray-500">{new Date(user.dob).toLocaleDateString()}</div>
+                        </div>
+                        <div className="py-[12px] px-[18px]">
+                          <h6 className="text-[12px] font-medium">Next of kin</h6>
+                          <div className="text-[12px] text-gray-500">
+                            osemeilu kelvin
+                          </div>
                         </div>
                       </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="accordion-content">
-                      Yes. It adheres to the WAI-ARIA design pattern.
                     </AccordionContent>
                   </AccordionItem>
                   <AccordionItem value="item-2" className="accordion-header">
                     <AccordionTrigger className="accordion-trigger">
-                      <div className="w-full flex items-center justify-between">
-                        <div className="flex items-center">
-                            <div className="rounded-full flex items-center justify-center h-[35px] w-[35px] border border-[#bbb]">
-                              <Lock size={18} />
-                            </div>
-                            <div className="flex flex-col mx-2">
-                              <span className="">Verification documents</span>
-                              <span className="text-[12px]">5 documents</span>
-                            </div>
-                        </div>
-                        <div className="">
-                          <ChevronUp size={18} />
-                        </div>
-                      </div>
+                      <AccordionTriggerContent
+                        icon={Lock}           // Pass the User icon component
+                        title="Verification documents"
+                        subtitle={5+ ' documents'} // Dynamic subtitle, e.g., number of items
+                        isComplete={false}     // Set to true if this section is completed, false otherwise
+                      />
                     </AccordionTrigger>
                     <AccordionContent className="accordion-content">
                       {
-                        user.verification_documents
-                        .filter(doc => doc.type === "NIN" || doc.type === "BVN")
+                        documents.filter(doc => doc.type === "NIN" || doc.type === "BVN")
                         .map((doc, index, arr) => (
                           <VerificationDocument
                             key={doc.id}
                             doc={doc}
                             isLast={index === arr.length - 1}
                             onFileUpload={handleFileUpload}
+                            onToggleShared={handleToggleShare}
                           />
                         ))
                       }
-                      <div className="px-3 py-3">
-                        <div class="text-[12px]">At least one of these <span className="ml-[2px]" style={{ color: 'red' }}>*</span></div>
-                      </div>
-                      {
-                        user.verification_documents
-                        .filter(doc => doc.type !== "NIN" && doc.type !== "BVN")
-                        .map((doc, index, arr) => (
-                          <VerificationDocument
-                            key={doc.id}
-                            doc={doc}
-                            isLast={index === arr.length - 1}
-                            onFileUpload={handleFileUpload}
-                          />
-                        ))
-                      }
+                      {(kycLevel === 'tier_2' || kycLevel === 'tier_3') && (
+                        <>
+                          <div className="px-3 py-3">
+                            <div class="text-[12px]">At least one of these <span className="ml-[2px]" style={{ color: 'red' }}>*</span></div>
+                          </div>
+                          {
+                            documents.filter(doc => doc.type !== "NIN" && doc.type !== "BVN" && doc.type !== "Utility Bill")
+                            .map((doc, index, arr) => (
+                              <VerificationDocument
+                                key={doc.id}
+                                doc={doc}
+                                isLast={index === arr.length - 1}
+                                onFileUpload={handleFileUpload}
+                                onToggleShared={handleToggleShare}
+                              />
+                            ))
+                          }
+                        </>
+                      )}
+                      {(kycLevel === 'tier_3') && (
+                        <>
+                          <div className="px-3 py-3">
+                            <div className="text-[12px]">Address Verification <span className="ml-[2px]" style={{ color: 'red' }}>*</span></div>
+                          </div>
+                          {
+                            documents.filter(doc => doc.type === "Utility Bill")
+                            .map((doc, index, arr) => (
+                              <VerificationDocument
+                                key={doc.id}
+                                doc={doc}
+                                isLast={index === arr.length - 1}
+                                onFileUpload={handleFileUpload}
+                                onToggleShared={handleToggleShare}
+                              />
+                            ))
+                          }
+                        </>
+                      )}
                     </AccordionContent>
                   </AccordionItem>
                   {
-                    !user.bank_accounts && (
+                    bankIsRequested && (
                       <AccordionItem value="item-3" className="accordion-header">
                         <AccordionTrigger className="accordion-trigger">
-                          <div className="w-full flex items-center justify-between">
-                            <div className="flex items-center">
-                                <div className="rounded-full flex items-center justify-center h-[35px] w-[35px] border border-[#bbb]">
-                                  <Landmark size={18} />
-                                </div>
-                                <div className="flex flex-col mx-2">
-                                  <span className="">Bank accounts</span>
-                                  <span className="text-[12px]">2 accounts</span>
-                                </div>
-                            </div>
-                            <div className="">
-                              <ChevronUp size={18} />
-                            </div>
-                          </div>
+                          <AccordionTriggerContent
+                            icon={Landmark}           // Pass the User icon component
+                            title="Bank accounts"
+                            subtitle={bankAccounts.length+ ' accounts'} // Dynamic subtitle, e.g., number of items
+                            isComplete={false}     // Set to true if this section is completed, false otherwise
+                          />
                         </AccordionTrigger>
-                        <AccordionContent className="accordion-content">
-                          <div className="p-3">
+                        <AccordionContent className="bank-accordion-content">
+                          {/* <div className="p-3">
                             <div className="mb-3">
                               <label htmlFor="bankName" className="block text-sm font-medium mb-1">Bank Name</label>
                               <input
@@ -607,11 +508,27 @@ function App() {
                                 readOnly // Often read-only after fetching from API
                               />
                             </div>
-                            {/* Potentially add a button to "Verify Bank Account" here */}
+                          </div> */}
+                            {[...Array(2).keys()].map((index) => (
+                              <div key={index} className="flex items-center justify-between mb-[20px]">
+                                <div className="">
+                                  <h5>OSEMEILU ITUA ENDURANCE</h5>
+                                  <h6>201989929992</h6>
+                                  <h6>United Bank For Africa</h6>
+                                </div>
+                                <div className="">
+                                  <Lock size={18} />
+                                </div>
+                              </div>
+                            ))}
+                          <div className="flex flex-1 items-center justify-center">
+                            <div className="cursor-pointer w-3/4 h-[100px] flex items-center justify-center border-2 border-dashed border-gray-300 bg-[#F8F8F8]">
+                              <Plus size={30} />
+                            </div>
                           </div>
                         </AccordionContent>
                       </AccordionItem>
-                     )
+                    )
                   }
                 </Accordion>
               </div>
@@ -626,12 +543,12 @@ function App() {
           </div>
         </>
       )
-    case 4:
+    case 3:
       return (
-        <div className="h-full flex flex-col items-center justify-center">
-          <h3 className="mb-4">Choose Access Type & Facial Recognition</h3>
+        <div className="h-full flex flex-col">
+          {/* <h3 className="mb-4">Choose Access Type & Facial Recognition</h3> */}
 
-          <div className="mb-6">
+          {/* <div className="mb-6">
             <label className="block text-[18px] font-medium mb-2">Select Access Type</label>
             <div className="flex items-center gap-4">
               <label className="flex items-center">
@@ -657,16 +574,15 @@ function App() {
                 Limited Access
               </label>
             </div>
-          </div>
+          </div> */}
 
-          <div className="mb-6 text-center">
+          <div className="flex flex-1 flex-col pb-[20px] text-center items-center">
             <h4 className="mb-2">Facial Recognition</h4>
             <p className="text-sm text-gray-600 mb-4">Please position your face clearly in the camera for verification.</p>
             
             {/* Webcam Component */}
             {!faceScanActive ? (
               <div className="w-[200px] h-[200px] rounded-full bg-gray-200 flex items-center justify-center overflow-hidden mb-4 relative">
-              {/* <div className="w-full h-64 bg-gray-200 flex items-center justify-center rounded-lg overflow-hidden mb-4 relative"> */}
                 {imgSrc ? (
                   <img src={imgSrc} alt="Captured Face" className="w-full h-full object-cover" />
                 ) : (
@@ -679,7 +595,7 @@ function App() {
                       setFaceScanActive(true); // Restart scan
                       setFaceScanStatus('');
                     }}
-                    className="absolute top-2 right-2 p-1 bg-white rounded-full text-gray-700 hover:text-gray-900"
+                    className="border-2 border-[#E5E5E5] absolute top-2 right-2 p-1 bg-white rounded-full text-gray-700 hover:text-gray-900"
                     title="Retake photo"
                   >
                     <img src={pencil} width="16" alt="Retake" />
@@ -702,10 +618,6 @@ function App() {
                 />
               </div>
             )}
-            {/* <div className="w-64 h-48 bg-gray-200 flex items-center justify-center rounded-lg mb-4">
-              <p className="text-gray-500">Webcam Feed Here</p>
-             
-            </div> */}
 
             {faceScanStatus && <p className="text-sm mt-2">{faceScanStatus}</p>}
             {/* Buttons for facial scan */}
@@ -735,35 +647,19 @@ function App() {
                    </button>
                 )}
               </div>
+              <button
+                onClick={nextStep}
+                className="primary-button mt-auto w-full"
+                disabled={!imgSrc || faceScanActive} // Disable if no image captured or scan active
+              >
+                Continue
+              </button>
             </div>
-
-          <button
-            onClick={nextStep}
-            className="primary-button mt-auto w-full"
-            disabled={!imgSrc || faceScanActive} // Disable if no image captured or scan active
-          >
-            Continue
-          </button>
+          
         </div>
       )
-    case 5: 
-      return (
-        <>
-          <div className="flex flex-col items-center justify-center">
-            <img src={check_circle} alt="" className="feature-icon" />
-            <div className="mt-2 text-center">
-              <h4 className="">
-                Verification data submitted successfully!
-              </h4>
-            </div>
-            <div className="mt-2 text-center">
-              <p className="mb-0 feature-text">
-                Redirecting you in <span id="countdown">5</span> seconds.
-              </p>
-            </div>
-          </div>
-        </>
-      )
+    case 4: 
+      return <Success />;
       default:
         return null;
     }
@@ -771,8 +667,8 @@ function App() {
 
   return (
     <>
-      <div className="modal-overlay">
-        <div className="relative modal-content bg-white rounded-3">
+      <div className="modal-overlay z-[1000]">
+        <div className="!relative modal-content bg-white rounded-3 z-[1001]">
           <div className="header-bar">
             <div><img src="" alt="Allow" className="" /></div>
             <div><button className="" type="button">x</button></div>
@@ -782,6 +678,51 @@ function App() {
               {renderStepContent()}
             </div>
           </div>
+
+          {activeBottomSheet && ( // Render an overlay behind the active bottom sheet
+            <div
+              className="h-full rounded-[12px] w-full absolute top-0 left-0 bg-black/10 backdrop-blur-sm" // Z-index higher than modal, lower than sheet
+              onClick={handleCloseBottomSheet} // Click overlay to close sheet
+            >
+              <div className="bg-white min-h-[100px] h-auto w-full absolute bottom-0 rounded-[12px]">
+                <div className=" flex justify-center mt-[20px]">
+                  <span className="h-[5px] w-[50px] bg-gray-100 rounded-[5px]"></span>
+                </div>
+                {activeBottomSheet === 'verify-otp' && (
+                  <VerifyOtpBottomSheet
+                    phoneNumber={phoneNumber}
+                    otp={otp}
+                    inputRefs={inputRefs}
+                    focusedInput={focusedInput}
+                    setFocusedInput={setFocusedInput}
+                    handleOTPInputChange={handleOTPInputChange}
+                    handleKeyDown={handleKeyDown}
+                    onContinue={() => {
+                      goToStep(2);
+                      handleCloseBottomSheet();
+                    }}
+                    otpMethod={otpMethod}
+                  />
+                )}
+                {activeBottomSheet === 'send-otp' && (
+                  <SendOtpBottomSheet 
+                    email={email}
+                    phoneNumber={phoneNumber}
+                    onFinish={() => setActiveBottomSheet("verify-otp")}
+                  />
+                )}
+                {activeBottomSheet === 'access-type' && (
+                  <AccessTypeSheet 
+                    accessType={accessType}
+                    setAccessType={setAccessType}
+                    onClose={handleCloseBottomSheet} 
+                    goToStep={goToStep}
+                  />
+                )}
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
     </>
@@ -789,66 +730,3 @@ function App() {
 }
 
 export default App
-
-// components/OTPInputComponent.jsx
-import React from 'react';
-import { useOTP } from '../hooks/useOTP'; // Adjust path
-
-const OTPInputComponent = ({ length, onVerify }) => {
-    const {
-        otp,
-        inputRefs,
-        handleOTPInputChange,
-        handleKeyDown,
-        isComplete,
-        focusedInput,
-        setFocusedInput
-    } = useOTP({ length }); // currentStep is no longer needed here, as the component itself mounts when needed
-
-    const handleSubmit = () => {
-        if (isComplete) {
-            onVerify(otp.join(''));
-        }
-    };
-
-    return (
-        <div className="h-full flex flex-col items-center justify-center">
-            <h3 className="mb-4">Enter OTP</h3>
-            <p className="text-center mb-6">A verification code has been sent to your phone number.</p> {/* dynamic text here if needed */}
-            <div className="flex justify-between">
-                {otp.map((digit, index) => (
-                    <input
-                        key={index}
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        maxLength={1}
-                        value={digit}
-                        onChange={(e) => {
-                            const value = e.target.value.replace(/[^0-9]/g, '');
-                            handleOTPInputChange(index, value, e);
-                        }}
-                        onKeyDown={(e) => handleKeyDown(index, e)}
-                        onFocus={() => setFocusedInput(index)}
-                        onBlur={() => setFocusedInput(null)}
-                        ref={el => (inputRefs.current[index] = el)} // Direct assignment
-                        className={`border-2 ${
-                            focusedInput == index
-                                ? 'border-primary'
-                                : 'border-[#89ABD940]'
-                        } rounded-[5px] w-[15%] h-[60px] text-center text-[20px] font-primary text-primary`}
-                    />
-                ))}
-            </div>
-
-            <button onClick={handleSubmit} disabled={!isComplete} className="primary-button mt-8 w-full">Verify OTP</button>
-            <button
-                className="mt-4 text-blue-600 text-sm"
-                onClick={() => console.log('Resend OTP')}>
-                Resend OTP
-            </button>
-        </div>
-    );
-};
-
-export default OTPInputComponent;
