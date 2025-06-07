@@ -1,11 +1,4 @@
 import { useState, useEffect } from 'react';
-import { format } from "date-fns"
-import { cn } from "@/lib/utils"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
 import {
   Select,
   SelectContent,
@@ -13,12 +6,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
-import { Lock, Landmark, User, ChevronUp } from 'lucide-react';
-import { Calendar as CalendarIcon } from "lucide-react"
 import ButtonWithLoader from './ButtonWithLoader';
-import useDatePicker from '../hooks/useDatePicker'; // Custom hook for date picker logic
+import useDatePicker from '../hooks/useDatePicker'; 
 import { useSelector, useDispatch } from 'react-redux';
 import {
   setPhoneNumber
