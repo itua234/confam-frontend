@@ -19,12 +19,14 @@ import { Lock, Landmark, User, ChevronUp } from 'lucide-react';
 import { Calendar as CalendarIcon } from "lucide-react"
 import ButtonWithLoader from './ButtonWithLoader';
 import useDatePicker from '../hooks/useDatePicker'; // Custom hook for date picker logic
+import { useSelector, useDispatch } from 'react-redux';
+import {
+  setPhoneNumber
+} from '../reducers/kyc/kycSlice';
 
-export const PhoneInputStep = ({ 
-  phoneNumber,
-  setPhoneNumber,
-  onContinue
-}) => {
+export const PhoneInputStep = ({ onContinue }) => {
+    const dispatch = useDispatch();
+    const { phoneNumber } = useSelector((state) => state.kyc); 
     const [isLoading, setIsLoading] = useState(false); // State to manage loading for the continue button
     const {
         selectedDay,
@@ -86,7 +88,7 @@ export const PhoneInputStep = ({
                             placeholder="Enter phone number"
                             value={phoneNumber}
                             maxLength={10}
-                            onChange={(e) => setPhoneNumber(e.target.value)}
+                            onChange={(e) => dispatch(setPhoneNumber(e.target.value))}
                         />
                     </div>
                 </div>

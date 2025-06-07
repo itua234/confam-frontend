@@ -2,10 +2,9 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { useParams } from 'react-router-dom';
 import { maskText, getEditAction, KYC_TIER_DOCUMENTS } from './lib/utils'; 
 import loader from './assets/loader.gif'
-import info from './assets/icons/info.svg'
 import pencil from './assets/icons/pencil.svg'
 import cloud_upload from "./assets/icons/cloud-upload.svg"
-import { Lock, Landmark, User, ArrowUp, Plus } from 'lucide-react';
+import { Lock } from 'lucide-react';
 import {
   Accordion,
   AccordionContent,
@@ -32,52 +31,70 @@ import PersonalInformationAccordion from "./components/accordions/personal-infor
 import { VerificationDocument } from "./components/verification-document"
 import { IdentityBox } from "./components/identity-box"
 
+// Import hooks from react-redux and actions from your slice
+import { useSelector, useDispatch } from 'react-redux';
+import {
+  setIsAppLoading,
+  setAppIsReady,
+  setisAuthenticated,
+  setAppError,
+  setCurrentStep,
+  nextStep,
+  prevStep,
+  resetAppUI,
+} from './reducers/ui/uiSlice';
+import {
+  setKycData, 
+  //updateIdentity 
+} from './reducers/kyc/kycSlice';
+import {
+  openBottomSheet,
+  closeBottomSheet,
+} from './reducers/bottomsheet/bottomSheetSlice';
 
 function App() {
+  const dispatch = useDispatch();
   const { kyc_token } = useParams();
   const client = useMemo(() => apiClient("http://localhost:8080/api/v1/"), []);
-  // if (!kycToken) {
-  //   setError('KYC token missing in URL.');
-  //   setLoading(false);
-  //   return;
-  // }
-  const [hasError, setHasError] = useState(false);
+ 
+  const {
+    isAuthenticated,
+    appIsReady,
+    // errorMessage,
+    currentStep
+  } = useSelector((state) => state.ui); 
+  const { activeBottomSheet } = useSelector((state) => state.bottomSheet); 
+  const { 
+    phoneNumber, 
+    email,
+    kycLevel,
+    bankIsRequested,
+    bankAccounts
+  } = useSelector((state) => state.kyc); 
+
   const [errorMessage, setErrorMessage] = useState('');
-  const [isAppLoading, setIsAppLoading] = useState(true); 
   
   const [user, setUser] = useState(userData);
   const [identities, setIdentities] = useState([]);
   const [ninBvnDocs, setNinBvnDocs] = useState([]);
   const [documents, setDocuments] = useState(user.verification_documents || []);
-  const [bankAccounts, setBankAccounts] = useState([]);
+  // const [bankAccounts, setBankAccounts] = useState([]);
   const [uploadedFiles, setUploadedFiles] = useState({});
-  const [kycLevel, setKycLevel] = useState('tier_1'); 
-  const [bankIsRequested, setBankIsRequested] = useState(false);
+  // const [kycLevel, setKycLevel] = useState('tier_1'); 
+  // const [bankIsRequested, setBankIsRequested] = useState(false);
   const [accessType, setAccessType] = useState(''); // e.g., 'continuous', 'one-time'
-  const [activeBottomSheet, setActiveBottomSheet] = useState("upload-address");
-  const [currentStep, setCurrentStep] = useState(0);
-  const totalSteps = 5;
-  const nextStep = () => {
-    if (currentStep < totalSteps) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
-  const prevStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-  const goToStep = (step) => {
-    setCurrentStep(step);
-  };
+ 
+  const nextStep = () => dispatch(nextStep());
+  const prevStep = () => dispatch(prevStep());
+  const goToStep = (step) => dispatch(setCurrentStep(step));
   const handleOpenBottomSheet = (sheetName) => {
-    setActiveBottomSheet(sheetName);
+    dispatch(openBottomSheet(sheetName))
   };
   const handleCloseBottomSheet = () => {
-    setActiveBottomSheet(null);
+    dispatch(closeBottomSheet())
   };
-  const [email, setEmail] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState('');
+  // const [email, setEmail] = useState("");
+  // const [phoneNumber, setPhoneNumber] = useState('');
   const [phone_verified_at, setPhoneVerifiedAt] = useState(false); // To track if phone is verified
   const [otpMethod, setOtpMethod] = useState(''); // e.g., 'sms', 'email'
   const {
@@ -100,19 +117,16 @@ function App() {
           },
         });
         //console.log('App config:', response.data);
-        setEmail(response.data.results.customer.email);
-        setPhoneNumber(response.data.results.customer.phone);
-        setPhoneVerifiedAt(response.data.results.customer.phone_verified_at);
-        setKycLevel(response.data.results.kyc_level);
-        setBankIsRequested(response.data.results.bank_accounts_requested);
-        setBankAccounts(response.data.results.customer.bank_accounts);
         setIdentities(response.data.results.customer.identities);
+        
+        dispatch(setKycData(response.data.results));
+        dispatch(setisAuthenticated(true));
       } catch (error) {
         console.error('Error fetching KYC request:', error);
-        setHasError(true);
-        setErrorMessage(error.message || 'Failed to load KYC request. Please try again.');
+        //setErrorMessage(error.message || 'Failed to load KYC request. Please try again.');
       } finally {
-        setIsAppLoading(false);
+        //setIsAppLoading(false);
+        dispatch(setAppIsReady(true));
       }
     };
     fetchRequestData();
@@ -191,17 +205,16 @@ function App() {
   };
 
   const renderStepContent = () => {
-    if (isAppLoading) {
+    if (!appIsReady) {
       return (
         <div className="flex flex-col items-center justify-center h-full">
           <img src={loader} alt="Loading..." className="w-7 h-7" />
         </div>
       );
     }
-
-    if (hasError) {
+    if (!isAuthenticated) {
       return (
-        <InvalidLink message={errorMessage} onRetry={() => setCurrentStep(0)} /> // Reset step to 0 for retry
+        <InvalidLink message={errorMessage} onRetry={() => console.log("")} /> // Reset step to 0 for retry
       );
     }
 
@@ -211,17 +224,11 @@ function App() {
           if(!phoneNumber || !phone_verified_at){
             goToStep(1);
           }else{
-            setActiveBottomSheet("send-otp");
+            handleOpenBottomSheet("send-otp");
           }
         }} />;
       case 1: 
-      return (
-        <PhoneInputStep
-          phoneNumber={phoneNumber}
-          setPhoneNumber={setPhoneNumber}
-          onContinue={() => setActiveBottomSheet("send-otp")}
-        />
-      )
+      return <PhoneInputStep onContinue={() => handleOpenBottomSheet("send-otp")}/>
     case 2: 
       return (
         <>
@@ -447,7 +454,7 @@ function App() {
                   <SendOtpBottomSheet 
                     email={email}
                     phoneNumber={phoneNumber}
-                    onFinish={() => setActiveBottomSheet("verify-otp")}
+                    onFinish={() => handleOpenBottomSheet("verify-otp")}
                   />
                 )}
                 {activeBottomSheet === 'access-type' && (

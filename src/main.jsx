@@ -9,6 +9,8 @@ import {
   QueryClientProvider,
   QueryClient,
 } from "@tanstack/react-query";
+import { Provider } from 'react-redux';
+import { store } from './reducers/store';
 
 const queryClient = new QueryClient();
 
@@ -16,9 +18,11 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <Routes>
-          <Route path="/:kyc_token" element={<App />} />
-        </Routes>
+        <Provider store={store}>
+          <Routes>
+            <Route path="/:kyc_token" element={<App />} />
+          </Routes>
+        </Provider>
       </BrowserRouter>
     </QueryClientProvider>
   </StrictMode>
