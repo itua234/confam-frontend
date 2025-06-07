@@ -12,11 +12,15 @@ import { useSelector, useDispatch } from 'react-redux';
 import {
   setPhoneNumber
 } from '../reducers/kyc/kycSlice';
+import {
+  openBottomSheet
+} from '../reducers/bottomsheet/bottomSheetSlice';
 
-export const PhoneInputStep = ({ onContinue }) => {
+export const PhoneInputStep = ({  }) => {
     const dispatch = useDispatch();
     const { phoneNumber } = useSelector((state) => state.kyc); 
-    const [isLoading, setIsLoading] = useState(false); // State to manage loading for the continue button
+    const [isLoading, setIsLoading] = useState(false);
+
     const {
         selectedDay,
         setSelectedDay,
@@ -48,12 +52,8 @@ export const PhoneInputStep = ({ onContinue }) => {
         // Simulate API call
         setTimeout(() => {
             setIsLoading(false);
-            console.log("payload:",{
-                phoneNumber,
-                dateOfBirth: `${selectedYear}-${selectedMonth}-${selectedDay}`,
-            });
-            onContinue();
-        }, 2000); // Simulate a 2-second API call delay
+            dispatch(openBottomSheet("send-otp"));
+        }, 2000); 
     }
   
     return (

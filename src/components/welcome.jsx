@@ -1,8 +1,26 @@
 import eye from '../assets/icons/eye-off.svg'
 import info from '../assets/icons/info.svg'
 import shield from '../assets/icons/shield-check.svg'
+import { useSelector, useDispatch } from 'react-redux';
+import {
+  openBottomSheet
+} from '../reducers/bottomsheet/bottomSheetSlice';
+import {
+  setCurrentStep
+} from '../reducers/ui/uiSlice';
 
-export const Welcome = ({ onContinue }) => {
+export const Welcome = ({  }) => {
+    const dispatch = useDispatch();
+    const { phoneVerifiedAt } = useSelector((state) => state.kyc); 
+
+    const handleClick = () => {
+        if(!phoneVerifiedAt){
+            dispatch(setCurrentStep(1));
+        }else{
+            dispatch(openBottomSheet("send-otp"));
+        }
+    }
+
     return (
         <div className="flex flex-1 flex-col justify-between pb-[50px]">
 
@@ -39,7 +57,7 @@ export const Welcome = ({ onContinue }) => {
                 <div className="footer-text m-[10px]">
                 By clicking 'Continue' you agree to <a href="#">Allow's End-user Policy</a>.<br />
                 </div>
-                <button onClick={onContinue} className="primary-button">
+                <button onClick={handleClick} className="primary-button">
                 Continue
                 </button>
             </div>

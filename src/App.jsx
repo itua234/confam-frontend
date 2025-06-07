@@ -220,15 +220,9 @@ function App() {
 
     switch(currentStep) {
       case 0:
-        return <Welcome onContinue={() => {
-          if(!phoneNumber || !phone_verified_at){
-            goToStep(1);
-          }else{
-            handleOpenBottomSheet("send-otp");
-          }
-        }} />;
+        return <Welcome />;
       case 1: 
-      return <PhoneInputStep onContinue={() => handleOpenBottomSheet("send-otp")}/>
+      return <PhoneInputStep />
     case 2: 
       return (
         <>
