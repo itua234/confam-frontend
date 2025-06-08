@@ -1,26 +1,25 @@
 import { useState, useEffect } from 'react';
-import { maskEmail } from '../lib/utils'; 
+import { maskEmail } from '../../lib/utils'; 
 import { Smartphone, Mail } from 'lucide-react';
-import loader from '../assets/loader.gif'
-import { sendOtp } from "../api/request";
+import loader from '../../assets/loader.gif'
+import { sendOtp } from "../../api/request";
+import { useSelector, useDispatch } from 'react-redux';
+import {
+  openBottomSheet
+} from '../../reducers/bottomsheet/bottomSheetSlice';
 
-export const SendOtpBottomSheet = ({ 
-  email,
-  phoneNumber,
-  onFinish
-}) => {
+export const SendOtpBottomSheet = ({ }) => {
+    const dispatch = useDispatch();
+    const { phoneNumber, email } = useSelector((state) => state.kyc); 
     const [sendingMethod, setSendingMethod] = useState(null);
     
     const handleSendOTP = async (method) => {
         setSendingMethod(method); 
         try {
             await new Promise(resolve => setTimeout(resolve, 2000));
-            console.log(`OTP sent via ${method} to ${method === 'sms' ? phoneNumber : email}`);
-            
-            onFinish();
+            dispatch(openBottomSheet("verify-otp"));
         } catch (error) {
             console.log(`Error sending OTP via ${method}:`, error);
-            alert(`Failed to send OTP via ${method}. Please try again.`); // User feedback for error
         } finally {
             setSendingMethod(null); 
         }

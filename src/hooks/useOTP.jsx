@@ -2,82 +2,69 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 
 export const useOTP = ({ length, currentStep }) => {
     const [otp, setOtp] = useState(Array(length).fill(''));
-    const [focusedInput, setFocusedInput] = useState(null);
-    // Use an array of refs for web inputs
-    const inputRefs = useRef([]);
-    // Initialize the refs array
+    const inputRefs = useRef([]); // This is the correct setup for inputRefs.current as an array of DOM elements
+    const [focusedInput, setFocusedInput] = useState(null); // Keep track of the currently focused input
+
+    // Ensure inputRefs.current has the correct number of elements (initialized to null)
+    // This is crucial if the 'length' prop can change
     useEffect(() => {
         inputRefs.current = inputRefs.current.slice(0, length);
-        for (let i = 0; i < length; i++) {
-            if (!inputRefs.current[i]) {
-                inputRefs.current[i] = { current: null }; // Initialize with a mutable object
-            }
+        for (let i = inputRefs.current.length; i < length; i++) {
+            inputRefs.current[i] = null; // Initialize missing refs
         }
     }, [length]);
 
+
     const handleOTPInputChange = useCallback((index, value, e) => {
         const newOtp = [...otp];
-        const isWebBackspace = e && e.key === 'Backspace'; // For React web
-
-        if ((isWebBackspace) && value === '' && index > 0) {
-            newOtp[index] = ''; // Clear current input on backspace if empty
-            if (inputRefs.current[index - 1]?.current) {
-                inputRefs.current[index - 1].current.focus();
-            }
-        } else if (value.length > 1) {
-            // Handle pasting: fill multiple digits
-            const pastedDigits = value.split('').slice(0, length - index);
-            pastedDigits.forEach((digit, i) => {
-                if (index + i < length) {
-                    newOtp[index + i] = digit;
-                }
-            });
-            // Move focus to the last pasted digit or the end
-            const nextFocusIndex = Math.min(length - 1, index + pastedDigits.length - 1);
-            if (inputRefs.current[nextFocusIndex]?.current) {
-                inputRefs.current[nextFocusIndex].current.focus();
-            }
-        } else {
-            // Normal single digit input
-            newOtp[index] = value;
-            if (value !== '' && index < length - 1 && inputRefs.current[index + 1]?.current) {
-                inputRefs.current[index + 1].current.focus();
-            } else if (value !== '' && index === length - 1) {
-                // If last input is filled, unfocus (optional)
-                inputRefs.current[index].current.blur();
-            }
-        }
+        // Ensure only one digit is kept and it's numeric
+        const sanitizedValue = value.replace(/[^0-9]/g, '').slice(0, 1);
+        newOtp[index] = sanitizedValue;
         setOtp(newOtp);
-    }, [otp, length]);
+
+        // Logic to move focus to the next input
+        if (sanitizedValue && index < length - 1) { // If a digit was entered and it's not the last input
+            // RequestAnimationFrame ensures the DOM is updated before trying to focus
+            requestAnimationFrame(() => {
+                inputRefs.current[index + 1]?.focus();
+            });
+        }
+    }, [otp, length]); // Add otp and length to dependencies
 
     const handleKeyDown = useCallback((index, e) => {
         if (e.key === 'Backspace' && otp[index] === '' && index > 0) {
-            // Prevents clearing the previous input when backspace is pressed on an empty input
-            // and moves focus back. The `handleOTPInputChange` will handle clearing
-            // the previous input's value.
-            inputRefs.current[index - 1]?.current?.focus();
+            // If backspace is pressed on an empty input, move focus to the previous input
+            requestAnimationFrame(() => {
+                inputRefs.current[index - 1]?.focus();
+            });
         }
-    }, [otp]);
+    }, [otp]); // Add otp to dependencies
 
+    // This part is important for initial focus or when step changes
     useEffect(() => {
-        const timer = setTimeout(() => {
-            // Focus the first input on mount
-            if (inputRefs.current[0]?.current) {
-                inputRefs.current[0].current.focus();
-            }
-        }, 100);
+        // You might want to focus the first input when the component mounts or currentStep changes
+        // Or focus the first empty input
+        const firstEmptyIndex = otp.findIndex(digit => digit === '');
+        if (inputRefs.current[firstEmptyIndex] && firstEmptyIndex !== -1) {
+             requestAnimationFrame(() => {
+                inputRefs.current[firstEmptyIndex].focus();
+            });
+        } else if (inputRefs.current[0] && length > 0) { // Fallback to first input if all filled or no empty
+            requestAnimationFrame(() => {
+                inputRefs.current[0].focus();
+            });
+        }
+    }, [currentStep, length]); // Re-run effect when currentStep or length changes
 
-        return () => clearTimeout(timer);
-    }, [currentStep]); // Run only once on mount
+    const isComplete = otp.every(digit => digit !== '');
 
     return {
         otp,
-        //setOtp, // Added setOtp to allow external control if needed
-        focusedInput,
-        setFocusedInput,
-        inputRefs, // Renamed 'inputs' to 'inputRefs' for clarity in React web context
+        inputRefs,
         handleOTPInputChange,
         handleKeyDown,
-        isComplete: otp.every((digit) => digit !== '')
+        isComplete,
+        focusedInput,
+        setFocusedInput
     };
 };

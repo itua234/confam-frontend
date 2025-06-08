@@ -17,12 +17,12 @@ import { useOTP } from './hooks/useOTP';
 import { PhoneInputStep } from './components/PhoneInputStep';
 import AccordionTriggerContent from './components/ui/accordion-trigger-content';
 import apiClient from './api/client';
-import { SendOtpBottomSheet } from './components/SendOtpBottomSheet';
-import { VerifyOtpBottomSheet } from './components/VerifyOtpBottomSheet'; 
+import { SendOtpBottomSheet } from './components/bottomsheets/send-otp';
+import { VerifyOtpBottomSheet } from './components/bottomsheets/verify-otp'; 
 import { UploadPassportSheet } from './components/bottomsheets/upload-passport'; 
 import { UploadAddressSheet } from './components/bottomsheets/upload-address'; 
-
 import { AccessTypeSheet } from './components/AccessTypeSheet';
+
 import { Welcome } from "./components/welcome"
 import { Success } from "./components/success"
 import { InvalidLink } from "./components/invalid";
@@ -430,26 +430,11 @@ function App() {
                 </div>
                 {activeBottomSheet === 'verify-otp' && (
                   <VerifyOtpBottomSheet
-                    phoneNumber={phoneNumber}
-                    otp={otp}
-                    inputRefs={inputRefs}
-                    focusedInput={focusedInput}
-                    setFocusedInput={setFocusedInput}
-                    handleOTPInputChange={handleOTPInputChange}
-                    handleKeyDown={handleKeyDown}
-                    onContinue={() => {
-                      goToStep(2);
-                      handleCloseBottomSheet();
-                    }}
                     otpMethod={otpMethod}
                   />
                 )}
                 {activeBottomSheet === 'send-otp' && (
-                  <SendOtpBottomSheet 
-                    email={email}
-                    phoneNumber={phoneNumber}
-                    onFinish={() => handleOpenBottomSheet("verify-otp")}
-                  />
+                  <SendOtpBottomSheet />
                 )}
                 {activeBottomSheet === 'access-type' && (
                   <AccessTypeSheet 

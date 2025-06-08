@@ -1,20 +1,41 @@
 import { useState, useEffect } from 'react';
-import { useOTP } from '../hooks/useOTP'; 
-import { useResendTimer } from '../hooks/useResendTimer';
-import ButtonWithLoader from './ButtonWithLoader';
-import { maskEmail } from '../lib/utils'; 
+import { useOTP } from '../../hooks/useOTP'; 
+import { useResendTimer } from '../../hooks/useResendTimer';
+import ButtonWithLoader from '../ButtonWithLoader';
+import { maskEmail } from '../../lib/utils'; 
+import { useSelector, useDispatch } from 'react-redux';
+import {
+  closeBottomSheet
+} from '../../reducers/bottomsheet/bottomSheetSlice';
+import {
+  setCurrentStep
+} from '../../reducers/ui/uiSlice';
 
 export const VerifyOtpBottomSheet = ({ 
-  phoneNumber,
-  otp, 
-  inputRefs,
-  focusedInput,
-  onContinue,
-  setFocusedInput,
-  handleOTPInputChange,
-  handleKeyDown,
-  otpMethod
+  //phoneNumber,
+//   otp, 
+//   inputRefs,
+//   focusedInput,
+  //onContinue,
+//   setFocusedInput,
+//   handleOTPInputChange,
+//   handleKeyDown,
+    otpMethod
 }) => {
+    const dispatch = useDispatch();
+    const { phoneNumber } = useSelector((state) => state.kyc);
+    const { currentStep } = useSelector((state) => state.ui); 
+
+    const {
+        otp,
+        inputRefs,
+        handleOTPInputChange,
+        handleKeyDown,
+        isComplete,
+        focusedInput,
+        setFocusedInput
+    } = useOTP({ length: 6, currentStep });
+
     const {
         resendIsDisabled,
         formattedTime,
@@ -26,10 +47,9 @@ export const VerifyOtpBottomSheet = ({
     const handleResendOTP = async () => {
         setIsResending(true); 
         try{
-        await new Promise(resolve => setTimeout(resolve, 2000)); 
-        //console.log(`OTP resent to ${phoneNumber} via ${otpMethod}.`);
-        alert('New OTP sent!'); 
-        resetTimer();
+            await new Promise(resolve => setTimeout(resolve, 2000)); 
+            alert('New OTP sent!'); 
+            resetTimer();
         }catch (error) {
             console.error('Error resending OTP:', error);
             alert('Failed to resend OTP. Please try again.'); 
@@ -42,7 +62,8 @@ export const VerifyOtpBottomSheet = ({
         setIsLoading(true);
         try{
             await new Promise(resolve => setTimeout(resolve, 2000)); 
-            onContinue();
+            dispatch(setCurrentStep(2));
+            dispatch(closeBottomSheet());
         }catch (error) {
             alert('Failed to resend OTP. Please try again.'); 
         } finally {
@@ -87,7 +108,8 @@ export const VerifyOtpBottomSheet = ({
                             onKeyDown={(e) => handleKeyDown(index, e)}
                             onFocus={() => setFocusedInput(index)}
                             onBlur={() => setFocusedInput(null)}
-                            ref={el => inputRefs.current[index].current = el}
+                            //ref={el => inputRefs.current[index].current = el}
+                            ref={el => (inputRefs.current[index] = el)}
                             //ref={el => (inputRefs.current[index] = el)}
                             //ref={inputRefs[index]}
                             className={`border-2 ${
