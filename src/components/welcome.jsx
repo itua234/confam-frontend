@@ -1,24 +1,30 @@
 import eye from '../assets/icons/eye-off.svg'
-import info from '../assets/icons/info.svg'
 import shield from '../assets/icons/shield-check.svg'
+import ButtonWithLoader from './ButtonWithLoader';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   openBottomSheet
 } from '../reducers/bottomsheet/bottomSheetSlice';
 import {
-  setCurrentStep
+  setCurrentStep,
+   setLoading
 } from '../reducers/ui/uiSlice';
 
-export const Welcome = ({  }) => {
+export default function Welcome () {
     const dispatch = useDispatch();
     const { phoneVerifiedAt } = useSelector((state) => state.kyc); 
-
+    const { loading } = useSelector((state) => state.ui); 
+   
     const handleClick = () => {
-        if(!phoneVerifiedAt){
-            dispatch(setCurrentStep(1));
-        }else{
-            dispatch(openBottomSheet("send-otp"));
-        }
+        dispatch(setLoading(true));
+        setTimeout(() => {
+            dispatch(setLoading(false));
+            if(!phoneVerifiedAt){
+                dispatch(setCurrentStep(1));
+            }else{
+                dispatch(openBottomSheet("send-otp"));
+            }
+        }, 1000); 
     }
 
     return (
@@ -57,9 +63,14 @@ export const Welcome = ({  }) => {
                 <div className="footer-text m-[10px]">
                 By clicking 'Continue' you agree to <a href="#">Allow's End-user Policy</a>.<br />
                 </div>
-                <button onClick={handleClick} className="primary-button">
-                Continue
-                </button>
+                <ButtonWithLoader
+                    onClick={handleClick}
+                    disabled={loading}
+                    isLoading={loading} 
+                    className="mt-auto" 
+                >
+                    Continue
+                </ButtonWithLoader>
             </div>
         </div>
     );

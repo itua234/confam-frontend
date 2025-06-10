@@ -1,7 +1,7 @@
 import React from 'react';
 import check_circle from '../assets/icons/shield-check.svg'
 
-export const Success = ({}) => {
+export default function Success ({}) {
     return (
         <div className="flex flex-col items-center justify-center">
             <img src={check_circle} alt="" className="feature-icon" />

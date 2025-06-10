@@ -14,7 +14,7 @@ import {
 import Webcam from 'react-webcam';
 import userData from "../user.json";
 import { useOTP } from './hooks/useOTP'; 
-import { PhoneInputStep } from './components/PhoneInputStep';
+
 import AccordionTriggerContent from './components/ui/accordion-trigger-content';
 import apiClient from './api/client';
 import { SendOtpBottomSheet } from './components/bottomsheets/send-otp';
@@ -23,8 +23,9 @@ import { UploadPassportSheet } from './components/bottomsheets/upload-passport';
 import { UploadAddressSheet } from './components/bottomsheets/upload-address'; 
 import { AccessTypeSheet } from './components/AccessTypeSheet';
 
-import { Welcome } from "./components/welcome"
-import { Success } from "./components/success"
+import Welcome from "./components/welcome"
+import PhoneInputStep from './components/phone-input';
+import Success from "./components/success"
 import { InvalidLink } from "./components/invalid";
 import BankAccountsAccordion from "./components/accordions/bank-accounts"
 import PersonalInformationAccordion from "./components/accordions/personal-information"

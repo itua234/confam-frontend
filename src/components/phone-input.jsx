@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Select,
   SelectContent,
@@ -10,17 +10,22 @@ import ButtonWithLoader from './ButtonWithLoader';
 import useDatePicker from '../hooks/useDatePicker'; 
 import { useSelector, useDispatch } from 'react-redux';
 import {
-  setPhoneNumber
+    setKycData, 
+    setPhoneNumber
 } from '../reducers/kyc/kycSlice';
 import {
-  openBottomSheet
+    openBottomSheet
 } from '../reducers/bottomsheet/bottomSheetSlice';
+import {
+    setLoading
+} from '../reducers/ui/uiSlice';
+import apiClient from '../api/client';
 
-export const PhoneInputStep = ({  }) => {
+export default function PhoneInputStep () {
+    const client = useMemo(() => apiClient("http://localhost:8080/api/v1/"), []);
     const dispatch = useDispatch();
-    const { phoneNumber } = useSelector((state) => state.kyc); 
-    const [isLoading, setIsLoading] = useState(false);
-
+    const { phoneNumber, email } = useSelector((state) => state.kyc); 
+    const { loading } = useSelector((state) => state.ui); 
     const {
         selectedDay,
         setSelectedDay,
@@ -32,14 +37,13 @@ export const PhoneInputStep = ({  }) => {
         months,
         years,
     } = useDatePicker();
-
     const canSubmit =
     (phoneNumber && phoneNumber.length === 10) && 
     !!selectedDay &&            
     !!selectedMonth &&          
     !!selectedYear
 
-    const sendOtp = () => {
+    const sendOtp = async () => {
         if (!phoneNumber) {
             alert('Please enter a valid phone number.');
             return;
@@ -48,12 +52,29 @@ export const PhoneInputStep = ({  }) => {
             alert('Please select a valid date.');
             return;
         }
-        setIsLoading(true);
-        // Simulate API call
-        setTimeout(() => {
-            setIsLoading(false);
+        dispatch(setLoading(true));
+        try {
+            await new Promise(resolve => setTimeout(resolve, 2000)); 
+            const payload = {
+                "email": email,
+                "phone_number": phoneNumber,
+                "dob": `${selectedYear}-${selectedMonth}-${selectedDay}`
+            };
+            const response = await client.post(`/allow/verify-nin`, payload, {
+                headers: {
+                    Accept: 'application/json',
+                    //Authorization: `Bearer ${kyc_token}`,
+                },
+            });
+            console.log('customer', response.data.results);
+            dispatch(setKycData({customer: response.data.results}));
+        } catch (error) {
+            console.error('Error fetching KYC request:', error);
+        } finally {
+            //setIsAppLoading(false);
+            dispatch(setLoading(false));
             dispatch(openBottomSheet("send-otp"));
-        }, 2000); 
+        }
     }
   
     return (
@@ -75,7 +96,7 @@ export const PhoneInputStep = ({  }) => {
                             className="w-full px-[20px] py-[14px] border bg-transparent border-[#E5E5E5] focus:outline-none"
                             id="phone"
                             placeholder="Enter phone number"
-                            value={phoneNumber}
+                            value={phoneNumber || ""}
                             maxLength={10}
                             onChange={(e) => dispatch(setPhoneNumber(e.target.value))}
                         />
@@ -125,8 +146,8 @@ export const PhoneInputStep = ({  }) => {
 
                 <ButtonWithLoader
                     onClick={sendOtp}
-                    disabled={!canSubmit || isLoading}
-                    isLoading={isLoading} 
+                    disabled={!canSubmit || loading}
+                    isLoading={loading} 
                     className="mt-auto" 
                 >
                     Continue

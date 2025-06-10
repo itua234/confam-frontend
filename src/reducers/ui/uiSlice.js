@@ -8,6 +8,7 @@ const initialState = {
     errorMessage: '',
     currentStep: 0,
     totalSteps: 5,
+    loading: false
 };
 
 const uiSlice = createSlice({
@@ -29,6 +30,9 @@ const uiSlice = createSlice({
         },
         setCurrentStep: (state, action) => {
             state.currentStep = action.payload;
+        },
+        setLoading: (state, action) => {
+            state.loading = action.payload;
         },
         nextStep: (state) => {
             if (state.currentStep < state.totalSteps) {
@@ -56,6 +60,7 @@ export const {
     setisAuthenticated,
     setAppError,
     setCurrentStep,
+    setLoading,
     nextStep,
     prevStep,
     resetAppUI
