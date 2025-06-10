@@ -8,7 +8,8 @@ const initialState = {
     errorMessage: '',
     currentStep: 0,
     totalSteps: 5,
-    loading: false
+    loading: false,
+    otpMethod: null
 };
 
 const uiSlice = createSlice({
@@ -33,6 +34,9 @@ const uiSlice = createSlice({
         },
         setLoading: (state, action) => {
             state.loading = action.payload;
+        },
+        setOtpMethod: (state, action) => {
+            state.otpMethod = action.payload;
         },
         nextStep: (state) => {
             if (state.currentStep < state.totalSteps) {
@@ -61,6 +65,7 @@ export const {
     setAppError,
     setCurrentStep,
     setLoading,
+    setOtpMethod,
     nextStep,
     prevStep,
     resetAppUI

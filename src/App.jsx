@@ -97,7 +97,6 @@ function App() {
   // const [email, setEmail] = useState("");
   // const [phoneNumber, setPhoneNumber] = useState('');
   const [phone_verified_at, setPhoneVerifiedAt] = useState(false); // To track if phone is verified
-  const [otpMethod, setOtpMethod] = useState(''); // e.g., 'sms', 'email'
   const {
     otp,
     inputRefs,
@@ -430,9 +429,7 @@ function App() {
                   <span className="h-[5px] w-[50px] bg-gray-100 rounded-[5px]"></span>
                 </div>
                 {activeBottomSheet === 'verify-otp' && (
-                  <VerifyOtpBottomSheet
-                    otpMethod={otpMethod}
-                  />
+                  <VerifyOtpBottomSheet />
                 )}
                 {activeBottomSheet === 'send-otp' && (
                   <SendOtpBottomSheet />

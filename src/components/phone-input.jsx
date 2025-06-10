@@ -68,10 +68,9 @@ export default function PhoneInputStep () {
             });
             console.log('customer', response.data.results);
             dispatch(setKycData({customer: response.data.results}));
-        } catch (error) {
+        }catch (error) {
             console.error('Error fetching KYC request:', error);
-        } finally {
-            //setIsAppLoading(false);
+        }finally {
             dispatch(setLoading(false));
             dispatch(openBottomSheet("send-otp"));
         }

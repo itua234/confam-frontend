@@ -8,24 +8,15 @@ import {
   closeBottomSheet
 } from '../../reducers/bottomsheet/bottomSheetSlice';
 import {
-  setCurrentStep
+  setCurrentStep,
+  setLoading
 } from '../../reducers/ui/uiSlice';
 
-export const VerifyOtpBottomSheet = ({ 
-  //phoneNumber,
-//   otp, 
-//   inputRefs,
-//   focusedInput,
-  //onContinue,
-//   setFocusedInput,
-//   handleOTPInputChange,
-//   handleKeyDown,
-    otpMethod
-}) => {
+export const VerifyOtpBottomSheet = ({ }) => {
     const dispatch = useDispatch();
-    const { phoneNumber } = useSelector((state) => state.kyc);
-    const { currentStep } = useSelector((state) => state.ui); 
-
+    const { phoneNumber, email } = useSelector((state) => state.kyc);
+    const { currentStep, otpMethod, loading } = useSelector((state) => state.ui); 
+    
     const {
         otp,
         inputRefs,
@@ -35,14 +26,12 @@ export const VerifyOtpBottomSheet = ({
         focusedInput,
         setFocusedInput
     } = useOTP({ length: 6, currentStep });
-
     const {
         resendIsDisabled,
         formattedTime,
         resetTimer
     } = useResendTimer(120);
     const [isResending, setIsResending] = useState(false); 
-    const [isLoading, setIsLoading] = useState(false); 
 
     const handleResendOTP = async () => {
         setIsResending(true); 
@@ -53,13 +42,13 @@ export const VerifyOtpBottomSheet = ({
         }catch (error) {
             console.error('Error resending OTP:', error);
             alert('Failed to resend OTP. Please try again.'); 
-        } finally {
+        }finally {
             setIsResending(false); 
         }
     };
 
     const verifyOtp = async () => {
-        setIsLoading(true);
+       dispatch(setLoading(true));
         try{
             await new Promise(resolve => setTimeout(resolve, 2000)); 
             dispatch(setCurrentStep(2));
@@ -67,7 +56,7 @@ export const VerifyOtpBottomSheet = ({
         }catch (error) {
             alert('Failed to resend OTP. Please try again.'); 
         } finally {
-            setIsLoading(false); 
+            dispatch(setLoading(false));
         }
     }
     
@@ -88,7 +77,7 @@ export const VerifyOtpBottomSheet = ({
                 <p className="text-center mb-4">OTP sent to {
                 otpMethod === 'sms' ?
                  '****'+phoneNumber.slice(-4) : 
-                    maskEmail("sivatech234@gmail.com")
+                    maskEmail(email)
                 }.</p>
                 <div className="">
                     <div className="flex justify-between">
@@ -108,10 +97,7 @@ export const VerifyOtpBottomSheet = ({
                             onKeyDown={(e) => handleKeyDown(index, e)}
                             onFocus={() => setFocusedInput(index)}
                             onBlur={() => setFocusedInput(null)}
-                            //ref={el => inputRefs.current[index].current = el}
                             ref={el => (inputRefs.current[index] = el)}
-                            //ref={el => (inputRefs.current[index] = el)}
-                            //ref={inputRefs[index]}
                             className={`border-2 ${
                                 focusedInput == index
                                     ? 'border-primary' 
@@ -129,7 +115,6 @@ export const VerifyOtpBottomSheet = ({
                             disabled={resendIsDisabled}
                             onClick={handleResendOTP}
                             className="cursor-pointer text-blue-600 ml-1 bg-transparent border-none p-0 font-inherit">
-                            {/* {otpMethod === 'sms' ? 'Resend via SMS' : 'Resend via Email'}  */}
                                 {isResending ? 'Sending...' : 'Resend code'}
                             </button>
                             <span className="ml-1">
@@ -137,12 +122,11 @@ export const VerifyOtpBottomSheet = ({
                             </span>
                         </p>
                     </div>
-
                 
                     <ButtonWithLoader
                         onClick={verifyOtp}
                         disabled={!otp.every(digit => digit !== '')}
-                        isLoading={isLoading} 
+                        isLoading={loading} 
                         className="" 
                     >
                         Verify code

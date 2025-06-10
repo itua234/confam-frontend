@@ -2,29 +2,32 @@ import { useState, useEffect } from 'react';
 import { maskEmail } from '../../lib/utils'; 
 import { Smartphone, Mail } from 'lucide-react';
 import loader from '../../assets/loader.gif'
-import { sendOtp } from "../../api/request";
 import { useSelector, useDispatch } from 'react-redux';
 import {
   openBottomSheet
 } from '../../reducers/bottomsheet/bottomSheetSlice';
+import {
+    setOtpMethod
+} from '../../reducers/ui/uiSlice';
 
 export const SendOtpBottomSheet = ({ }) => {
     const dispatch = useDispatch();
     const { phoneNumber, email } = useSelector((state) => state.kyc); 
-    const [sendingMethod, setSendingMethod] = useState(null);
+    const { otpMethod } = useSelector((state) => state.ui); 
+    useEffect(() => {
+        dispatch(setOtpMethod(null)); // Reset otpMethod when the component mounts
+    }, [dispatch]);
     
     const handleSendOTP = async (method) => {
-        setSendingMethod(method); 
+        dispatch(setOtpMethod(method)); 
         try {
             await new Promise(resolve => setTimeout(resolve, 2000));
             dispatch(openBottomSheet("verify-otp"));
-        } catch (error) {
+        }catch (error) {
             console.log(`Error sending OTP via ${method}:`, error);
-        } finally {
-            setSendingMethod(null); 
         }
     };
-    const isSending = sendingMethod !== null;
+    const isSending = otpMethod !== null;
 
     return (
         <div 
@@ -47,7 +50,7 @@ export const SendOtpBottomSheet = ({ }) => {
                         </div>
                         <p className="text-[16px]">Phone: ****{phoneNumber && phoneNumber.slice(-4)}</p>
                     </div>
-                    {sendingMethod === 'sms' ? (
+                    {otpMethod === 'sms' ? (
                         <img src={loader} alt="Sending..." className="w-[20px] h-[20px]" />
                     ) : (
                         <svg
@@ -73,7 +76,7 @@ export const SendOtpBottomSheet = ({ }) => {
                             </div>
                             <p className="text-[16px]">Email: {maskEmail(email)}</p>
                         </div>
-                        {sendingMethod === 'email' ? (
+                        {otpMethod === 'email' ? (
                             <img src={loader} alt="Sending..." className="w-[20px] h-[20px]" />
                         ) : (
                             <svg
