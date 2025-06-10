@@ -22,7 +22,9 @@ import {
 import apiClient from '../api/client';
 
 export default function PhoneInputStep () {
-    const client = useMemo(() => apiClient("http://localhost:8080/api/v1/"), []);
+   const host = window.location.hostname;
+  console.log(host);
+  const client = useMemo(() => apiClient(`http://${host}:8080/api/v1/`), [host]);
     const dispatch = useDispatch();
     const { phoneNumber, email } = useSelector((state) => state.kyc); 
     const { loading } = useSelector((state) => state.ui); 

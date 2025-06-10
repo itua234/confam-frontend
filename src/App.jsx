@@ -56,7 +56,9 @@ import {
 function App() {
   const dispatch = useDispatch();
   const { kyc_token } = useParams();
-  const client = useMemo(() => apiClient("http://localhost:8080/api/v1/"), []);
+  const host = window.location.hostname;
+  console.log(host);
+  const client = useMemo(() => apiClient(`http://${host}:8080/api/v1/`), [host]);
  
   const {
     isAuthenticated,
